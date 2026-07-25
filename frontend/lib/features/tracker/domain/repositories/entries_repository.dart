@@ -23,7 +23,7 @@ class TransactionEntryRepository implements IEntryRepository {
   @override
   Future<List<Category>> getCategories() async {
     try {
-      final result = await client.get('/categories');
+      final result = await client.get('categories');
       final data = result.data;
       if (data is List<dynamic>) {
         return data.map((e) => Category.from(e)).toList();
@@ -42,7 +42,7 @@ class TransactionEntryRepository implements IEntryRepository {
   Future<EntriesList?> getEntries({int? year}) async {
     try {
       // final result = await client.get('/entries?year=${DateTime.now().year}');
-      final result = await client.get('/entries');
+      final result = await client.get('entries');
       final data = result.data;
       if (data is List<dynamic>) {
         final parsed = EntriesList(
@@ -65,7 +65,7 @@ class TransactionEntryRepository implements IEntryRepository {
   Future<int> addEntry(Entry entry) async {
     try {
       final body = entry.toJson();
-      final result = await client.post('/entries/', data: body);
+      final result = await client.post('entries/', data: body);
       if (result.statusCode == 201) {
         // insert success
         final resultMap = result.data as Map<String, dynamic>;

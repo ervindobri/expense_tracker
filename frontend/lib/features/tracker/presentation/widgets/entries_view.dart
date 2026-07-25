@@ -5,8 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:frontend/core/app/app.dart';
+import 'package:frontend/core/extensions/build_context.dart';
 import 'package:frontend/core/extensions/string.dart';
 import 'package:frontend/core/widgets/pill_tabbar.dart';
+import 'package:frontend/core/widgets/snap_scroll_physics.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 import 'package:frontend/features/tracker/presentation/state/categories_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/entries_provider.dart';
@@ -54,9 +56,9 @@ class EntriesView extends HookConsumerWidget {
         scrolled.value = parentController.offset.abs();
         offset.value = scrolled.value / (balanceHeight / 2);
         passthroughNotifier.set(offset.value < 0.5);
-        if (kDebugMode) {
-          print(offset.value);
-        }
+        // if (kDebugMode) {
+        //   print(offset.value);
+        // }
       }
 
       parentController.addListener(listener);
@@ -70,14 +72,14 @@ class EntriesView extends HookConsumerWidget {
           sigmaY: lerpDouble(0, 12, offset.value)!,
         ),
         child: RefreshIndicator.adaptive(
-          onRefresh: (){
-            ref.invalidate(entriesProvider);
+          onRefresh: () {
+            ref.invalidate(monthlyEntriesProvider);
             return Future.value();
           },
           child: CustomScrollView(
             controller: parentController,
-            // mainAxisSize: MainAxisSize.min,
-            // spacing: 32,
+            hitTestBehavior: HitTestBehavior.deferToChild,
+            physics: const HalfwaySnapPhysics(snapExtent: balanceHeight),
             slivers: [
               const SliverToBoxAdapter(
                 child: IgnorePointer(
@@ -103,7 +105,9 @@ class EntriesView extends HookConsumerWidget {
                       controller: scrollController,
                       itemCount: 6,
                       shrinkWrap: true,
-                      padding: EdgeInsets.symmetric(horizontal: 24),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: context.width / 3,
+                      ),
                       scrollDirection: Axis.horizontal,
                       separatorBuilder: (_, index) {
                         return SizedBox(width: 32);
@@ -130,7 +134,7 @@ class EntriesView extends HookConsumerWidget {
                                   week.value = index + 1;
                                   isTotal.value = false;
                                 }
-          
+
                                 const itemCount = 6;
                                 final maxExtent =
                                     scrollController.position.maxScrollExtent;
@@ -142,7 +146,7 @@ class EntriesView extends HookConsumerWidget {
                                   0.0,
                                   maxExtent,
                                 );
-          
+
                                 scrollController.animateTo(
                                   offset,
                                   duration: Durations.short2,
@@ -159,11 +163,16 @@ class EntriesView extends HookConsumerWidget {
                                     duration: Durations.short1,
                                     child: Text(
                                       key: ValueKey(index),
-                                      (month == currentMonth && currentWeek == index ? '(c)' : '') +
+                                      (month == currentMonth &&
+                                                  currentWeek == index
+                                              ? '(c)'
+                                              : '') +
                                           (index == 5
                                               ? "Total"
                                               : "Week ${index + 1}"),
-                                      style: Theme.of(context).textTheme.bodyLarge
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyLarge
                                           ?.copyWith(
                                             // color: isSelected ? Colors.black : null,
                                             fontWeight: isSelected
@@ -183,7 +192,7 @@ class EntriesView extends HookConsumerWidget {
                   ),
                 ),
               ),
-          
+
               PinnedHeaderSliver(
                 child: Container(
                   decoration: BoxDecoration(
@@ -227,7 +236,7 @@ class EntriesView extends HookConsumerWidget {
           
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: MediaQuery.sizeOf(context).height,
+                  height: 32.0*(categories.value?.length ?? 0) + 96,
                   child: Material(
                     color: FluentTheme.of(context).cardColor,
                     child: Padding(
@@ -294,17 +303,22 @@ class EntriesView extends HookConsumerWidget {
                                           vertical: 12.0,
                                           horizontal: 12.0,
                                         ),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(cat.name),
-                                            NumberFlow(
-                                                key: ValueKey(totalForCategory),
-                                              value: totalForCategory,
-                                              format: NumberFlowFormat.decimal(),
+                                        child: SizedBox(
+                                          height: 24,
+                                          child: Center(
+                                            child: Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Text(cat.name),
+                                                NumberFlow(
+                                                    key: ValueKey(totalForCategory),
+                                                  value: totalForCategory,
+                                                  format: NumberFlowFormat.decimal(),
+                                                ),
+                                              ],
                                             ),
-                                          ],
+                                          ),
                                         ),
                                       ),
                                     );
@@ -324,4 +338,3 @@ class EntriesView extends HookConsumerWidget {
     );
   }
 }
-

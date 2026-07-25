@@ -43,19 +43,11 @@ class _ExpenseIncomeTabBarState<T> extends State<ExpenseIncomeTabBar<T>> {
   Widget build(BuildContext context) {
     return Container(
       width: 248,
-      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: FluentTheme.of(context).acrylicBackgroundColor,
-        borderRadius: BorderRadius.circular(32),
-        boxShadow: [
-          BoxShadow(
-            offset: Offset(0, 8),
-            spreadRadius: -2,
-            blurRadius: 12,
-            color: Colors.black12.withValues(alpha: 0.12)
-          )
-        ]
+      color: FluentTheme.of(context).scaffoldBackgroundColor,
+        borderRadius: BorderRadius.circular(32.0)
       ),
+      padding: const EdgeInsets.all(4),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final tabWidth = 120.0;
@@ -71,7 +63,7 @@ class _ExpenseIncomeTabBarState<T> extends State<ExpenseIncomeTabBar<T>> {
                 width: tabWidth,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
+                    color: FluentTheme.of(context).inactiveBackgroundColor,
                     borderRadius: BorderRadius.circular(26),
                   ),
                 ),

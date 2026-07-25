@@ -23,6 +23,13 @@ abstract final class AppTheme {
   );
 }
 
+
+extension FluentThemeDataExt on FluentThemeData {
+  Color get inverseTextColor => brightness == Brightness.dark ? Colors.black : Colors.white;
+  Color get chipColor => brightness == Brightness.dark ? Colors.white : Colors.black;
+  Color get borderColor => brightness == Brightness.dark ? Colors.white : Colors.black;
+}
+
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
   ThemeModeNotifier.new,
 );

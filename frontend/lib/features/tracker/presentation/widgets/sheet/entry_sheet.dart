@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fluent_ui/fluent_ui.dart' show FluentIcons, FluentTheme;
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
@@ -11,6 +13,7 @@ import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 import 'package:frontend/features/tracker/domain/repositories/entries_repository.dart';
 import 'package:frontend/features/tracker/presentation/state/report_notifier.dart';
+import 'package:frontend/features/tracker/presentation/widgets/entry_filter_list.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:number_flow_flutter/number_flow_flutter.dart';
 import 'package:toastification/toastification.dart';
@@ -34,7 +37,6 @@ class EntrySheet extends HookConsumerWidget {
     final keyboardHeight = context.bottomPadding;
     final stateEntries = useState(entries);
 
-    final entriesScrollController = useScrollController();
     final total = stateEntries.value.fold(
       0.0,
       (prod, entry) => prod + entry.amount,
@@ -44,18 +46,17 @@ class EntrySheet extends HookConsumerWidget {
         Container(
           decoration: BoxDecoration(
             color: FluentTheme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(32.0),
+            borderRadius: BorderRadius.circular(40.0),
             boxShadow: [
               BoxShadow(
-                offset: Offset(0, -12),
-                blurRadius: 16,
-                spreadRadius: -4,
-                color: FluentTheme.of(context).shadowColor.withAlpha(48),
+                color: FluentTheme.of(context).shadowColor.withAlpha(64),
+                blurRadius: 64,
+                spreadRadius: -24,
               ),
             ],
           ),
           padding: EdgeInsets.all(16.0),
-          margin: EdgeInsets.all(16.0),
+          margin: EdgeInsets.all(12.0),
           child: Column(
             spacing: 16,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,10 +66,16 @@ class EntrySheet extends HookConsumerWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Row(
-                    spacing: 4,
+                    spacing: 8,
                     children: [
-                      Text("Week $week >", style: theme.bodySmall),
-                      Text(category.name, style: theme.bodyLarge.bold),
+                      Text(
+                        "Week $week >",
+                        style: theme.bodySmall?.copyWith(height: 1.5),
+                      ),
+                      Text(
+                        category.name,
+                        style: theme.bodyLarge.bold?.copyWith(height: 1.5),
+                      ),
                     ],
                   ),
                   IconButton.filled(
@@ -88,7 +95,7 @@ class EntrySheet extends HookConsumerWidget {
                   width: context.width,
                   padding: EdgeInsets.all(12.0),
                   decoration: BoxDecoration(
-                    color: FluentTheme.of(context).cardColor,
+                    color: FluentTheme.of(context).scaffoldBackgroundColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -109,69 +116,36 @@ class EntrySheet extends HookConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text('edit manually', style: theme.bodySmall.light),
-                    AnimatedContainer(
-                      duration: Duration(milliseconds: 150),
-                      width: context.width,
-                      padding: EdgeInsets.all(12.0),
-                      decoration: BoxDecoration(
-                        color: FluentTheme.of(context).scaffoldBackgroundColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: SizedBox(
-                        height: 32,
-                        child: ListView(
-                          controller: entriesScrollController,
-                          scrollDirection: Axis.horizontal,
-                          shrinkWrap: true,
-                          children: [
-                            ...stateEntries.value.map(
-                              (e) => Padding(
-                                padding: const EdgeInsets.only(right: 12.0),
-                                child: FilterChip.elevated(
-                                  backgroundColor: FluentTheme.of(
-                                    context,
-                                  ).menuColor,
-                                  padding: EdgeInsets.zero,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(32),
-                                  ),
-                                  label: Text(e.amount.formatCurrency),
-                                  onSelected: (_) {
-                                    toastification.show(
-                                      context:
-                                          context, // optional if you use ToastificationWrapper
-                                      title: Text(
-                                        'Added: ${e.addedDate.formatDate}',
-                                      ),
-                                      type: ToastificationType.info,
-                                      autoCloseDuration: const Duration(
-                                        seconds: 2,
-                                      ),
-                                    );
-                                  },
-                                  onDeleted: () async {
-                                    try {
-                                      final result = await ref
-                                          .read(entryRepositoryProvider)
-                                          .removeEntry(e.id);
-                                      if (result) {
-                                        stateEntries.value = stateEntries.value
-                                            .where((entry) => entry != e)
-                                            .toList();
-                                      }
-                                    } catch (e, _) {
-                                      if (kDebugMode) {
-                                        print(e.toString());
-                                      }
-                                    }
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
+                    FilterChipList(
+                          initialList: stateEntries.value,
+                          onPressed: (e) {
+                            toastification.show(
+                              context:
+                                  context, // optional if you use ToastificationWrapper
+                              title: Text('Added: ${e.addedDate.formatDate}'),
+                              type: ToastificationType.info,
+                              autoCloseDuration: const Duration(seconds: 2),
+                            );
+                            unawaited(HapticFeedback.lightImpact());
+                          },
+                          onDeleted: (e) async {
+                            try {
+                              final result = await ref
+                                  .read(entryRepositoryProvider)
+                                  .removeEntry(e.id);
+                              if (result) {
+                                stateEntries.value = stateEntries.value
+                                    .where((entry) => entry != e)
+                                    .toList();
+                                unawaited(HapticFeedback.mediumImpact());
+                              }
+                            } catch (e, _) {
+                              if (kDebugMode) {
+                                print(e.toString());
+                              }
+                            }
+                          },
                         ),
-                      ),
-                    ),
                   ],
                 ),
                 crossFadeState: stateEntries.value.isEmpty
@@ -251,7 +225,7 @@ class EntrySheet extends HookConsumerWidget {
                         final entry = Entry(
                           id: -1,
                           amount: amount,
-                          addedDate: entryDate,
+                          addedDate: entryDate.ignoringTimezone,
                           category: category.id,
                         );
                         final result = await ref
@@ -262,15 +236,6 @@ class EntrySheet extends HookConsumerWidget {
                           entry.copyWith(id: result),
                         ];
                         amountController.clear();
-                        if (entriesScrollController.hasClients &&
-                            stateEntries.value.length > 2) {
-                          entriesScrollController.animateTo(
-                            entriesScrollController.position.maxScrollExtent +
-                                120,
-                            duration: Durations.short3,
-                            curve: Curves.bounceIn,
-                          );
-                        }
                       }
                     } catch (e, _) {
                       if (kDebugMode) {

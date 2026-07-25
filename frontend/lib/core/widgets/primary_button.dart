@@ -33,7 +33,7 @@ class PrimaryButton extends HookWidget {
       },
       behavior: HitTestBehavior.opaque,
       child: AnimatedScale(
-        scale: pressed.value ? 0.9 : 1.0,
+        scale: pressed.value ? 1.055 : 1.0,
         duration: kThemeAnimationDuration,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(

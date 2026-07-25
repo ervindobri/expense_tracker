@@ -1,3 +1,5 @@
+import 'package:frontend/core/extensions/date_time.dart';
+
 enum CategoryType { expense, income }
 
 
@@ -44,7 +46,7 @@ class Entry {
       amount: e['amount'] ?? 0.0,
       // the API serializes the store as its integer primary key
       category: e['category'] ?? 0,
-      addedDate: DateTime.parse(e['added_date'] ?? ''),
+      addedDate: DateTime.parse(e['added_date'] ?? '').ignoringTimezone,
     );
   }
 

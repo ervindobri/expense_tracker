@@ -44,6 +44,7 @@ class BalanceView extends HookConsumerWidget {
                   children: [
                     SizedBox(
                       child: ContextMenuOverlay<int>(
+                        title: 'Select month',
                         itemBuilder: (BuildContext context, int item) =>
                             Text((item + 1).toMonthLabel),
                         onSelected: (item) {
@@ -85,6 +86,7 @@ class BalanceView extends HookConsumerWidget {
                           children: [
                             NumberFlow(
                               value: (balanceForMonth.value?.totalAmount ?? 0.0),
+                              motionBlur: 4.0,
                               style: Theme.of(
                                 context,
                               ).textTheme.headlineLarge?.copyWith(),

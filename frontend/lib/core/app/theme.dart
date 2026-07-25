@@ -2,7 +2,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 abstract final class AppTheme {
-  static final AccentColor accent = Colors.yellow;
+  static final AccentColor accent = Colors.blue;
 
   static final FluentThemeData light = FluentThemeData(
     brightness: Brightness.light,
@@ -10,7 +10,7 @@ abstract final class AppTheme {
     visualDensity: VisualDensity.adaptivePlatformDensity,
     scaffoldBackgroundColor: Color(0xffE8E8E8),
     cardColor: Color.fromARGB(255, 255, 255, 255),
-
+    menuColor: Color(0xfff7f7f7)
   );
 
   static final FluentThemeData dark = FluentThemeData(
@@ -19,6 +19,7 @@ abstract final class AppTheme {
     visualDensity: VisualDensity.adaptivePlatformDensity,
     scaffoldBackgroundColor: Color(0xff0F0F0F),
     cardColor: Color(0xff000000),
+    menuColor: Color(0xff020202)
   );
 }
 

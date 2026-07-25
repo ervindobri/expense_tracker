@@ -214,6 +214,9 @@ class BlurredMaterial extends StatelessWidget {
       color: solidColor,
       borderRadius: borderRadius,
       elevation: elevation,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: Colors.transparent,
+      animateColor: true,
       child: child,
     );
 
@@ -231,9 +234,11 @@ class BlurredMaterial extends StatelessWidget {
       );
     }
 
-    return BackdropFilter(
-      filter: ImageFilter.blur(sigmaX: sigmaX, sigmaY: sigmaY),
-      child: material,
+    return ClipRRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: sigmaX, sigmaY: sigmaY),
+        child: material,
+      ),
     );
   }
 

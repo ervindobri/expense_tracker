@@ -53,7 +53,7 @@ services:
       - TS_USERSPACE=false
       - TS_AUTH_ONCE=true
       - TS_ENABLE_HEALTH_CHECK=true
-      - TS_LOCAL_ADDR_PORT=127.0.0.1:41234
+      - TS_LOCAL_ADDR_PORT=127.0.0.1:41235
     configs:
       - source: ts-serve
         target: /config/serve.json
@@ -64,7 +64,7 @@ services:
     cap_add:
       - net_admin
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:41234/healthz"]
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:41235/healthz"]
       interval: 1m
       timeout: 10s
       retries: 3
@@ -77,6 +77,8 @@ services:
     # TrueNAS app config — saving force-pulls, unlike :latest which depends
     # on TrueNAS noticing the digest change.
     image: ghcr.io/ervindobri/expense-tracker:eff963fa5d7bb8c9c2e4c24a16ffb8aed61a92fb
+    platform: linux/amd64
+
     container_name: expense-tracker-api
     network_mode: service:tailscale      # share the sidecar's network; not exposed on the LAN
     env_file:
@@ -98,6 +100,8 @@ services:
     # pinned like the api image — use the FULL 40-char commit sha of a
     # successful "Publish web image" run (short shas are not tagged)
     image: ghcr.io/ervindobri/expense-tracker-web:1957f014388b37bb16b4935f1b348a1ae8bd4e66
+    platform: linux/amd64
+
     container_name: expense-tracker-web
     network_mode: service:tailscale      # nginx on :8080 in the shared namespace
     depends_on:

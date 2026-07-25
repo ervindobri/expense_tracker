@@ -49,22 +49,24 @@ class HomeShell extends HookConsumerWidget {
       floatingActionButton: balance?.incomes == 0.0
           ? PrimaryButton(onPressed: () {}, label: "Add income")
           : const SizedBox(),
-      body: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1280),
-        child: Stack(
-          alignment: Alignment.topCenter,
-          fit: StackFit.expand,
-          // spacing: 32,
-          children: [
-            Positioned(top: 0, left: 0, right: 0, child: const BalanceView()),
-            Positioned.fill(
-              child: PassthroughContainer(
-                topPassThroughHeight: balanceHeight,
-                enabled: ref.watch(passThroughEnabledProvider),
-                child: const EntriesView(),
-              ),
-            ), // Custom scroll view with sizedbox of height BalanceView
-          ],
+      body: Align(
+        alignment: Alignment.center,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 840),
+          child: Stack(
+            alignment: Alignment.topCenter,
+            // spacing: 32,
+            children: [
+              Positioned(top: 0, left: 0, right: 0, child: const BalanceView()),
+              Positioned.fill(
+                child: PassthroughContainer(
+                  topPassThroughHeight: balanceHeight,
+                  enabled: ref.watch(passThroughEnabledProvider),
+                  child: const EntriesView(),
+                ),
+              ), // Custom scroll view with sizedbox of height BalanceView
+            ],
+          ),
         ),
       ),
     );

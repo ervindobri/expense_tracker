@@ -18,14 +18,14 @@ Future<Balance> balance(Ref ref, int month) async {
       entries?.items.where(
         (e) =>
             categories.firstWhere((c) => c.id == e.category).type ==
-            CategoryType.income,
+            CategoryType.income && e.addedDate.month <= month,
       ) ??
       [];
   final totalExpenses =
       entries?.items.where(
         (e) =>
             categories.firstWhere((c) => c.id == e.category).type ==
-            CategoryType.expense,
+            CategoryType.expense && e.addedDate.month <= month,
       ) ??
       [];
   final totalAmount =

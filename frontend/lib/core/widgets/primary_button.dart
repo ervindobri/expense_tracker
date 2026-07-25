@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:fluent_ui/fluent_ui.dart' show FluentTheme;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 class PrimaryButton extends HookWidget {
@@ -39,7 +42,10 @@ class PrimaryButton extends HookWidget {
                 : Colors.white,
             textStyle: Theme.of(context).textTheme.bodyMedium,
           ),
-          onPressed: () => onPressed(),
+          onPressed: () {
+            onPressed();
+            unawaited(HapticFeedback.mediumImpact());
+          },
           child: Padding(
             padding: padding ?? EdgeInsets.zero,
             child: Row(

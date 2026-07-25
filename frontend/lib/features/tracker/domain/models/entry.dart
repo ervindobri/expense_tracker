@@ -1,5 +1,13 @@
 enum CategoryType { expense, income }
 
+
+extension CategoryTypeExt on CategoryType {
+  String get displayName => switch (this) {
+    CategoryType.expense => '🛍️ Expenses',
+    CategoryType.income => '💰 Incomes',
+  };
+}
+
 class Category {
   final int id;
   final String name;

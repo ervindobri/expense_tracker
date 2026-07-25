@@ -54,7 +54,8 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:PORT_YOUR_FLUTTER_WEB_RUNS_ON",
+    "http://localhost:57657",
+    "http://127.0.0.1:57657",
 ]
 
 ROOT_URLCONF = 'mysite.urls'

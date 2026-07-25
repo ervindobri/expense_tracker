@@ -76,7 +76,7 @@ services:
     # To release: push, wait for Actions, replace the sha here and in the
     # TrueNAS app config — saving force-pulls, unlike :latest which depends
     # on TrueNAS noticing the digest change.
-    image: ghcr.io/ervindobri/expense-tracker:eff963fa5d7bb8c9c2e4c24a16ffb8aed61a92fb
+    image: ghcr.io/ervindobri/expense-tracker:340d2bc38ccf5ba71877c48391b8b17cc2181e7b
     platform: linux/amd64
 
     container_name: expense-tracker-api
@@ -99,7 +99,7 @@ services:
   web:
     # pinned like the api image — use the FULL 40-char commit sha of a
     # successful "Publish web image" run (short shas are not tagged)
-    image: ghcr.io/ervindobri/expense-tracker-web:1957f014388b37bb16b4935f1b348a1ae8bd4e66
+    image: ghcr.io/ervindobri/expense-tracker-web:340d2bc38ccf5ba71877c48391b8b17cc2181e7b
     platform: linux/amd64
 
     container_name: expense-tracker-web

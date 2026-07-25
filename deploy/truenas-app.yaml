@@ -1,0 +1,106 @@
+# Product scraper API as a TrueNAS custom app, reachable only over Tailscale.
+#
+# Install: TrueNAS UI > Apps > Discover > (three-dot menu) > Install via YAML,
+# name it "expense-tracker" and paste this file.
+#
+# Secrets (TS_AUTHKEY, DJANGO_SECRET_KEY) are NOT in this file — they load
+# from an env file on the NAS via `env_file:`. Before first start:
+#   1. create the dirs:
+#        /mnt/Main/apps/expense-tracker/ts-state
+#        /mnt/Main/apps/expense-tracker/data
+#   2. copy deploy/expense-tracker.env.example to
+#        /mnt/Main/apps/expense-tracker/expense-tracker.env
+#      fill in the values, and: chmod 600 expense-tracker.env
+#
+# The app is served at https://expense-tracker.<tailnet>.ts.net — requires
+# MagicDNS + HTTPS certificates enabled in the Tailscale admin console.
+
+configs:
+  ts-serve:
+    # tailscale serve: terminate TLS on 443, then path-route inside the shared
+    # network namespace — flutter web (nginx :8080) at /, django (gunicorn
+    # :8000) under its own prefixes. Same origin, so no CORS anywhere.
+    # NOTE: serve strips the mount path before proxying, so each django
+    # handler's proxy target must repeat the prefix.
+    # AllowFunnel=false keeps it tailnet-only.
+    content: |
+      {
+        "TCP": {"443": {"HTTPS": true}},
+        "Web": {
+          "$${TS_CERT_DOMAIN}:443": {
+            "Handlers": {
+              "/api": {"Proxy": "http://127.0.0.1:8000/api"},
+              "/api-auth": {"Proxy": "http://127.0.0.1:8000/api-auth"},
+              "/admin": {"Proxy": "http://127.0.0.1:8000/admin"},
+              "/static": {"Proxy": "http://127.0.0.1:8000/static"},
+              "/": {"Proxy": "http://127.0.0.1:8080"}
+            }
+          }
+        },
+        "AllowFunnel": {"$${TS_CERT_DOMAIN}:443": false}
+      }
+
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: expense-tracker-ts
+    hostname: expense-tracker            # node name -> expense-tracker.<tailnet>.ts.net
+    env_file:
+      - /mnt/Main/apps/expense-tracker/expense-tracker.env  # TS_AUTHKEY lives here
+    environment:
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_SERVE_CONFIG=/config/serve.json
+      - TS_USERSPACE=false
+      - TS_AUTH_ONCE=true
+      - TS_ENABLE_HEALTH_CHECK=true
+      - TS_LOCAL_ADDR_PORT=127.0.0.1:41234
+    configs:
+      - source: ts-serve
+        target: /config/serve.json
+    volumes:
+      - /mnt/Main/apps/expense-tracker/ts-state:/var/lib/tailscale  # node identity must persist
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    cap_add:
+      - net_admin
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:41234/healthz"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  api:
+    # pinned to a CI build (the workflow tags each image with the commit sha).
+    # To release: push, wait for Actions, replace the sha here and in the
+    # TrueNAS app config — saving force-pulls, unlike :latest which depends
+    # on TrueNAS noticing the digest change.
+    image: ghcr.io/ervindobri/expense-tracker:6a194ac678466c0477f159a9ee96065d696b29cf
+    container_name: expense-tracker-api
+    network_mode: service:tailscale      # share the sidecar's network; not exposed on the LAN
+    env_file:
+      - /mnt/Main/apps/expense-tracker/expense-tracker.env  # DJANGO_SECRET_KEY lives here
+    environment:
+      - DJANGO_DEBUG=0
+      - DJANGO_ALLOWED_HOSTS=expense-tracker.tail0b146d.ts.net
+      - DJANGO_CSRF_TRUSTED_ORIGINS=https://expense-tracker.tail0b146d.ts.net
+      # only needed once a web frontend runs on a *different* origin:
+      # - DJANGO_CORS_ALLOWED_ORIGINS=https://frontend.EDIT-ME.ts.net
+    volumes:
+      - /mnt/Main/apps/expense-tracker/data:/data   # sqlite database
+    depends_on:
+      tailscale:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    # pinned like the api image — use the FULL 40-char commit sha of a
+    # successful "Publish web image" run (short shas are not tagged)
+    image: ghcr.io/ervindobri/expense-tracker-web:f857332f0f618a98640c00a9924315ea13942da6
+    container_name: expense-tracker-web
+    network_mode: service:tailscale      # nginx on :8080 in the shared namespace
+    depends_on:
+      tailscale:
+        condition: service_healthy
+    restart: unless-stopped

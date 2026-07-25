@@ -278,6 +278,7 @@ class EntriesView extends HookConsumerWidget {
                                         await showModalBottomSheet(
                                           context: context,
                                           isScrollControlled: true,
+                                          backgroundColor: Colors.transparent,
                                           builder: (_) => EntrySheet(
                                             week: week.value,
                                             category: cat,

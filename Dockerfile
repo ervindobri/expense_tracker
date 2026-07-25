@@ -10,9 +10,8 @@ WORKDIR /repo
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# services.py imports scraper.scrapers via the repo root, so the image
-# mirrors the repo layout: /repo/scraper + /repo/server
-COPY scraper/ scraper/
+
+# mirrors the repo layout: /repo/server
 COPY server/ server/
 
 WORKDIR /repo/server

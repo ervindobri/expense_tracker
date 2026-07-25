@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -23,9 +24,27 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-(8ga7fk*m0bc+t=x__9%y!l0da-mjh(1=d^vs(wu9p0k*^!y=1'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Defaults to on for local development — set DJANGO_DEBUG=0 in prod.
+DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
 
-ALLOWED_HOSTS = ["127.0.0.1", "10.0.2.2", "192.168.1.42", "localhost"]
+# comma-separated, e.g. DJANGO_ALLOWED_HOSTS=api.example.com,example.com
+ALLOWED_HOSTS = [
+    h for h in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if h
+]
+
+# comma-separated origins, e.g. https://product-scraper.tailnet.ts.net
+# needed for admin/browsable-API logins when served over HTTPS
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',') if o
+]
+
+if not DEBUG:
+    # in production the app sits behind tailscale serve (TLS termination),
+    # which forwards plain HTTP with X-Forwarded-Proto set
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
 
 
 # Application definition

@@ -76,7 +76,7 @@ services:
     # To release: push, wait for Actions, replace the sha here and in the
     # TrueNAS app config — saving force-pulls, unlike :latest which depends
     # on TrueNAS noticing the digest change.
-    image: ghcr.io/ervindobri/expense-tracker:340d2bc38ccf5ba71877c48391b8b17cc2181e7b
+    image: ghcr.io/ervindobri/expense-tracker:41e3b5700eaa81b29ca9e041f78713fe1ae216f2
     platform: linux/amd64
 
     container_name: expense-tracker-api
@@ -101,7 +101,6 @@ services:
     # successful "Publish web image" run (short shas are not tagged)
     image: ghcr.io/ervindobri/expense-tracker-web:340d2bc38ccf5ba71877c48391b8b17cc2181e7b
     platform: linux/amd64
-
     container_name: expense-tracker-web
     network_mode: service:tailscale      # nginx on :8080 in the shared namespace
     depends_on:

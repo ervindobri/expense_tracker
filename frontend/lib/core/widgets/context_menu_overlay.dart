@@ -145,7 +145,7 @@ class _ContextMenuOverlayContentState<T>
     );
     final endRect = Rect.fromLTWH(endLeft, endTop, endWidth, endHeight);
 
-    final color = FluentTheme.of(context).menuColor;
+    final color = FluentTheme.of(context).scaffoldBackgroundColor;
 
     return Stack(
       children: [
@@ -175,14 +175,14 @@ class _ContextMenuOverlayContentState<T>
               width: rect.width,
               height: rect.height,
               child: BlurredMaterial(
-                color: color.withValues(alpha: 0.75),
+                color: color.withValues(alpha: 0.95),
                 borderRadius: BorderRadius.circular(radius),
-                sigmaX: 32,
-                sigmaY: 32,
+                sigmaX: 128,
+                sigmaY: 128,
                 child: Container(
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: Theme.of(context).scaffoldBackgroundColor,
+                      color: FluentTheme.of(context).scaffoldBackgroundColor,
                       width: 1,
                       strokeAlign: BorderSide.strokeAlignInside,
                     ),

@@ -19,23 +19,37 @@ class Category {
 }
 
 class Entry {
+  final int id;
   final double amount;
   final int category;
   final DateTime addedDate;
 
   Entry({
+    required this.id,
     required this.amount,
     required this.addedDate,
     required this.category,
   });
   factory Entry.from(Map<String, dynamic> e) {
     return Entry(
+      id: e['id'] ?? 0,
       amount: e['amount'] ?? 0.0,
       // the API serializes the store as its integer primary key
-      category:
-          e['category'] ?? 0,
+      category: e['category'] ?? 0,
       addedDate: DateTime.parse(e['added_date'] ?? ''),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "amount": amount,
+      "category": category,
+      "added_date": addedDate.toIso8601String(),
+    };
+  }
+
+  Entry copyWith({required int id}) {
+    return Entry(id: id, amount: amount, addedDate: addedDate, category: category,);
   }
 }
 

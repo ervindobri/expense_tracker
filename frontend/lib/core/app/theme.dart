@@ -8,12 +8,17 @@ abstract final class AppTheme {
     brightness: Brightness.light,
     accentColor: accent,
     visualDensity: VisualDensity.adaptivePlatformDensity,
+    scaffoldBackgroundColor: Color(0xffE8E8E8),
+    cardColor: Color.fromARGB(255, 255, 255, 255),
+
   );
 
   static final FluentThemeData dark = FluentThemeData(
     brightness: Brightness.dark,
     accentColor: accent,
     visualDensity: VisualDensity.adaptivePlatformDensity,
+    scaffoldBackgroundColor: Color(0xff0F0F0F),
+    cardColor: Color(0xff000000),
   );
 }
 

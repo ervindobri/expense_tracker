@@ -10,9 +10,9 @@ part of 'entries_provider.dart';
 // ignore_for_file: type=lint, type=warning
 
 @ProviderFor(entries)
-const entriesProvider = QueriesProvider._();
+const entriesProvider = EntriesProvider._();
 
-final class QueriesProvider
+final class EntriesProvider
     extends
         $FunctionalProvider<
           AsyncValue<EntriesList?>,
@@ -20,19 +20,19 @@ final class QueriesProvider
           FutureOr<EntriesList?>
         >
     with $FutureModifier<EntriesList?>, $FutureProvider<EntriesList?> {
-  const QueriesProvider._()
+  const EntriesProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'queriesProvider',
+        name: r'entriesProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$queriesHash();
+  String debugGetCreateSourceHash() => _$entriesHash();
 
   @$internal
   @override
@@ -46,4 +46,4 @@ final class QueriesProvider
   }
 }
 
-String _$queriesHash() => r'e1c53e7dcd00567d7688c531f469ae919207484c';
+String _$entriesHash() => r'89edd3a5b1b57b06654147436fd5fab109f26560';

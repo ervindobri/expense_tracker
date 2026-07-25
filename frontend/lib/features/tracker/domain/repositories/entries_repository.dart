@@ -8,7 +8,11 @@ part 'entries_repository.g.dart';
 
 abstract class IEntryRepository {
   Future<List<Category>> getCategories();
-  Future<EntriesList?> getEntries(); // Load all entries for this year
+  Future<EntriesList?> getEntries();
+
+  Future<int> addEntry(Entry entry);
+
+  Future<bool> removeEntry(int id);
 }
 
 class TransactionEntryRepository implements IEntryRepository {
@@ -49,6 +53,47 @@ class TransactionEntryRepository implements IEntryRepository {
       }
 
       return null;
+    } catch (e, _) {
+      if (kDebugMode) {
+        print(e);
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<int> addEntry(Entry entry) async {
+    try {
+      final body = entry.toJson();
+      final result = await client.post('/entries/', data: body);
+      if (result.statusCode == 201) {
+        // insert success
+        final resultMap = result.data as Map<String, dynamic>;
+        return resultMap['id'] as int? ?? 0;
+      }
+
+      throw Exception(
+        'insert unsuccessful: ${result.statusCode} ${result.statusMessage}',
+      );
+    } catch (e, _) {
+      if (kDebugMode) {
+        print(e);
+      }
+      rethrow;
+    }
+  }
+  
+  @override
+  Future<bool> removeEntry(int id) async {
+    try {
+      final result = await client.delete('/entries/$id/');
+      if (result.statusCode == 204) {
+        return true;
+      }
+
+      throw Exception(
+        'delete unsuccessful: ${result.statusCode} ${result.statusMessage}',
+      );
     } catch (e, _) {
       if (kDebugMode) {
         print(e);

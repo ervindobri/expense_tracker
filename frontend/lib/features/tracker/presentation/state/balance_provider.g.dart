@@ -58,7 +58,7 @@ final class BalanceProvider
   }
 }
 
-String _$balanceHash() => r'a0cd54612b86b35ddccb0b08d0af8f7e88fc5de7';
+String _$balanceHash() => r'55b4a31961f56ae8437a7e0e7da0bef2c187ec33';
 
 final class BalanceFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<Balance>, int> {

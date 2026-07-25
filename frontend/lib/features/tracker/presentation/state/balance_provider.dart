@@ -13,10 +13,48 @@ Future<Balance> balance(Ref ref, int month) async {
       ? <Entry>[]
       : entries.items.where((entry) => entry.addedDate.month == month).toList();
 
-  final expenses = balanceEntries.where((e) => categories.firstWhere((c) => c.id == e.category).type == CategoryType.expense);
-  final incomes = balanceEntries.where((e) => categories.firstWhere((c) => c.id == e.category).type == CategoryType.income);
-  final expensesTotal = expenses.toList().fold(0.0, (double amount, Entry b) => amount + b.amount);
-  final incomesTotal = incomes.toList().fold(0.0, (double amount, Entry b) => amount + b.amount);
+  // Total balance for this year
+  final totalIncomes =
+      entries?.items.where(
+        (e) =>
+            categories.firstWhere((c) => c.id == e.category).type ==
+            CategoryType.income,
+      ) ??
+      [];
+  final totalExpenses =
+      entries?.items.where(
+        (e) =>
+            categories.firstWhere((c) => c.id == e.category).type ==
+            CategoryType.expense,
+      ) ??
+      [];
+  final totalAmount =
+      totalIncomes.fold(0.0, (amount, Entry b) => amount + b.amount) -
+      totalExpenses.fold(0.0, (amount, Entry b) => amount + b.amount);
 
-  return Balance(totalAmount: 0, expenses: expensesTotal, incomes: incomesTotal);
+  // For selected month
+  final expenses = balanceEntries.where(
+    (e) =>
+        categories.firstWhere((c) => c.id == e.category).type ==
+        CategoryType.expense,
+  );
+  final incomes = balanceEntries.where(
+    (e) =>
+        categories.firstWhere((c) => c.id == e.category).type ==
+        CategoryType.income,
+  );
+  final expensesTotal = expenses.toList().fold(
+    0.0,
+    (double amount, Entry b) => amount + b.amount,
+  );
+  final incomesTotal = incomes.toList().fold(
+    0.0,
+    (double amount, Entry b) => amount + b.amount,
+  );
+
+  return Balance(
+    totalAmount: totalAmount,
+    expenses: expensesTotal,
+    incomes: incomesTotal,
+  );
 }

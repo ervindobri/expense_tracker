@@ -86,7 +86,7 @@ class TransactionEntryRepository implements IEntryRepository {
   @override
   Future<bool> removeEntry(int id) async {
     try {
-      final result = await client.delete('/entries/$id/');
+      final result = await client.delete('entries/$id/');
       if (result.statusCode == 204) {
         return true;
       }

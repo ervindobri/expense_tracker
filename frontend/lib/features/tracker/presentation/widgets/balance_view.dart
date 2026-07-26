@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:fluent_ui/fluent_ui.dart' hide Colors;
 import 'package:flutter/material.dart' hide IconButton, Tooltip;
+import 'package:flutter/services.dart';
 import 'package:frontend/core/app/app.dart';
 import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/string.dart';
@@ -23,44 +26,37 @@ class BalanceView extends HookConsumerWidget {
       width: MediaQuery.sizeOf(context).width,
       decoration: BoxDecoration(
         color: FluentTheme.of(context).cardColor,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
         border: Border(
-          bottom: BorderSide(color: FluentTheme.of(context).activeColor),
+          bottom: BorderSide(color: FluentTheme.of(context).borderColor),
         ),
       ),
-      padding: EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       child: Stack(
         alignment: Alignment.topCenter,
         children: [
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.all(24.0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 24,
-                  children: [
-                    SizedBox(
-                      child: ContextMenuOverlay<int>(
-                        title: 'Select month',
-                        itemBuilder: (BuildContext context, int item) =>
-                            Text((item + 1).toMonthLabel),
-                        onSelected: (item) {
-                          ref.read(reportProvider.notifier).set(item + 1);
-                        },
-                        items: List.generate(12, growable: false, (i) => i),
-                        child: Row(
-                          spacing: 8,
-                          children: [
-                            Text(selected.toMonthLabel),
-                            Icon(FluentIcons.chevron_down, size: 12),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                child: ContextMenuOverlay<int>(
+                  title: 'Select month',
+                  itemBuilder: (BuildContext context, int item) =>
+                      Text((item + 1).toMonthLabel),
+                  onSelected: (item) {
+                    ref.read(reportProvider.notifier).set(item + 1);
+                    unawaited(HapticFeedback.mediumImpact());
+                  },
+                  items: List.generate(12, growable: false, (i) => i),
+                  child: Row(
+                    spacing: 8,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(selected.toMonthLabel),
+                      const Icon(FluentIcons.chevron_down, size: 12),
+                    ],
+                  ),
                 ),
               ),
               // Calculated balance from filtered month
@@ -72,7 +68,7 @@ class BalanceView extends HookConsumerWidget {
                     spacing: 12,
                     children: [
                       Text(
-                        'TOTAL BALANCE',
+                        '⚖️ TOTAL BALANCE',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).hintColor,
                           fontWeight: FontWeight.w100,
@@ -85,12 +81,12 @@ class BalanceView extends HookConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             NumberFlow(
-                              value: (balanceForMonth.value?.totalAmount ?? 0.0),
+                              value: balanceForMonth.value?.totalAmount ?? 0.0,
                               motionBlur: 4.0,
                               style: Theme.of(
                                 context,
                               ).textTheme.headlineLarge?.copyWith(),
-                            // format: NumberFlowFormat.currency(currencyCode: currencyCode),
+                              // format: NumberFlowFormat.currency(currencyCode: currencyCode),
                             ),
                             Text(
                               'Ft',
@@ -112,7 +108,7 @@ class BalanceView extends HookConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Expenses',
+                              '🔺 Expenses',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(context).hintColor,
@@ -133,7 +129,7 @@ class BalanceView extends HookConsumerWidget {
                           spacing: 12,
                           children: [
                             Text(
-                              'Incomes',
+                              '❇️ Incomes',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(context).hintColor,
@@ -186,7 +182,10 @@ class BalanceView extends HookConsumerWidget {
                 icon: Icon(
                   isDark ? FluentIcons.sunny : FluentIcons.clear_night,
                 ),
-                onPressed: () => ref.read(themeModeProvider.notifier).toggle(),
+                onPressed: () {
+                  ref.read(themeModeProvider.notifier).toggle();
+                  unawaited(HapticFeedback.lightImpact());
+                },
               ),
             ),
           ),
@@ -194,22 +193,4 @@ class BalanceView extends HookConsumerWidget {
       ),
     );
   }
-}
-
-extension<E> on int {
-  String get toMonthLabel => switch (this) {
-    1 => 'January',
-    2 => 'February',
-    3 => 'March',
-    4 => 'April',
-    5 => 'May',
-    6 => 'June',
-    7 => 'July',
-    8 => 'August',
-    9 => 'September',
-    10 => 'October',
-    11 => 'November',
-    12 => 'December',
-    _ => toString(),
-  };
 }

@@ -1,14 +1,14 @@
 import 'package:flutter/widgets.dart';
 
 class HalfwaySnapPhysics extends ClampingScrollPhysics {
-  // The pixel extent of the "snap zone" — e.g. balanceHeight.
-  // Below this, physics snaps to 0 or snapExtent. Beyond it, normal scrolling.
-  final double snapExtent;
 
   const HalfwaySnapPhysics({
     super.parent,
     required this.snapExtent,
   });
+  // The pixel extent of the "snap zone" — e.g. balanceHeight.
+  // Below this, physics snaps to 0 or snapExtent. Beyond it, normal scrolling.
+  final double snapExtent;
 
   @override
   HalfwaySnapPhysics applyTo(ScrollPhysics? ancestor) {
@@ -42,7 +42,9 @@ class HalfwaySnapPhysics extends ClampingScrollPhysics {
         ? snapExtent
         : 0.0;
 
-    if (target == position.pixels) return null;
+    if (target == position.pixels) {
+      return null;
+    }
 
     return ScrollSpringSimulation(
       _spring,

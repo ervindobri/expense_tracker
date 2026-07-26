@@ -2,7 +2,7 @@
 import 'dart:ui';
 
 import 'package:fluent_ui/fluent_ui.dart' show FluentTheme;
-import 'package:fluent_ui/src/styles/theme.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:frontend/core/widgets/blurred_container.dart';
@@ -33,7 +33,9 @@ class ContextMenuOverlay<T> extends HookWidget {
     void openOverlay() {
       final box =
           triggerKey.value.currentContext?.findRenderObject() as RenderBox?;
-      if (box == null) return;
+      if (box == null) {
+        return;
+      }
       final triggerRect = box.localToGlobal(Offset.zero) & box.size;
 
       final overlay = Overlay.of(context);
@@ -116,8 +118,8 @@ class _ContextMenuOverlayContentState<T>
   @override
   Widget build(BuildContext context) {
     final screen = MediaQuery.sizeOf(context);
-    final panelMaxWidth = screen.width * 0.6;
-    final itemHeight = 48.0;
+    final panelMaxWidth = kIsWeb ? 248.0 : screen.width * 0.6;
+    const itemHeight = 48.0;
     final itemCount = widget.items.length;
     final hasTitle = widget.title != null && widget.title!.isNotEmpty;
     final panelMaxHeight = itemHeight * itemCount + 16;
@@ -168,92 +170,94 @@ class _ContextMenuOverlayContentState<T>
               endRect,
               _animation.value,
             )!;
-            final radius = 32.0;
+            const radius = 32.0;
             final animationValue = _animation.value;
             return Positioned(
               left: rect.left,
               top: rect.top,
               width: rect.width,
               height: rect.height,
-              child: BlurredMaterial(
-                color: color.withValues(alpha: 0.65,),
-                sigmaX: 4,
-                sigmaY: 4,
-                child: Container(
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: FluentTheme.of(context).scaffoldBackgroundColor,
-                      width: 1,
-                      strokeAlign: BorderSide.strokeAlignInside,
+              child: ClipRRect(
+                child: BlurredMaterial(
+                  color: color.withValues(alpha: 0.65,),
+                  sigmaX: 8,
+                  sigmaY: 8,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: FluentTheme.of(context).scaffoldBackgroundColor,
+                        width: 1,
+                        strokeAlign: BorderSide.strokeAlignInside,
+                      ),
+                      borderRadius: BorderRadius.circular(radius),
                     ),
-                    borderRadius: BorderRadius.circular(radius),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 8,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      if (hasTitle)
-                        Padding(
-                          padding: EdgeInsets.lerp(
-                            EdgeInsets.zero,
-                            const EdgeInsets.symmetric(
-                              horizontal: 24 + 8,
-                              vertical: 8,
-                            ),
-                            animationValue,
-                          )!,
-                          child: FittedBox(
-                            child: Text(
-                              widget.title!,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    fontSize: lerpDouble(
-                                      0,
-                                      12,
-                                      animationValue,
-                                    )!,
-                                    color: Theme.of(context)
-                                        .textTheme
-                                        .bodySmall
-                                        ?.color
-                                        ?.withValues(alpha: 0.5),
-                                  ),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 8,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        if (hasTitle)
+                          Padding(
+                            padding: EdgeInsets.lerp(
+                              EdgeInsets.zero,
+                              const EdgeInsets.symmetric(
+                                horizontal: 24 + 8,
+                                vertical: 8,
+                              ),
+                              animationValue,
+                            )!,
+                            child: FittedBox(
+                              child: Text(
+                                widget.title!,
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      fontSize: lerpDouble(
+                                        0,
+                                        12,
+                                        animationValue,
+                                      )!,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color
+                                          ?.withValues(alpha: 0.5),
+                                    ),
+                              ),
                             ),
                           ),
+                        Expanded(
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            itemCount: widget.items.length,
+                            itemBuilder: (context, index) {
+                              final item = widget.items[index];
+                              return ListTile(
+                                dense: true,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                                splashColor: Colors.transparent,
+                                focusColor: Colors.transparent,
+                                hoverColor: Colors.transparent,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                minVerticalPadding: 0,
+                                onTap: () => widget.onSelected(item),
+                                title: FittedBox(
+                                  alignment: Alignment.centerLeft,
+                                  fit: BoxFit.scaleDown,
+                                  child: widget.itemBuilder(context, item),
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      Expanded(
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          itemCount: widget.items.length,
-                          itemBuilder: (context, index) {
-                            final item = widget.items[index];
-                            return ListTile(
-                              dense: true,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(99),
-                              ),
-                              splashColor: Colors.transparent,
-                              focusColor: Colors.transparent,
-                              hoverColor: Colors.transparent,
-                              contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              minVerticalPadding: 0,
-                              onTap: () => widget.onSelected(item),
-                              title: FittedBox(
-                                alignment: Alignment.centerLeft,
-                                fit: BoxFit.scaleDown,
-                                child: widget.itemBuilder(context, item),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

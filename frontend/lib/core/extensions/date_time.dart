@@ -5,6 +5,15 @@ extension DateTimeExt on DateTime {
     final format = DateFormat('EEEE, y.MM.dd HH:MM ');
     return format.format(this);
   }
+
+  bool isDayAfterOrSame(DateTime other) {
+    return day >= other.day;
+  }
+
+  bool isDayBeforeOrsame(DateTime other) {
+    return day <=
+        other.day;
+  }
 }
 
 extension NaiveDateTime on DateTime {

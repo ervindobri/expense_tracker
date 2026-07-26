@@ -1,6 +1,7 @@
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+// ignore: avoid_classes_with_only_static_members
 abstract final class AppTheme {
   static final AccentColor accent = Colors.blue;
 
@@ -8,23 +9,25 @@ abstract final class AppTheme {
     brightness: Brightness.light,
     accentColor: accent,
     visualDensity: VisualDensity.adaptivePlatformDensity,
-    scaffoldBackgroundColor: Color(0xffE8E8E8),
-    cardColor: Color.fromARGB(255, 255, 255, 255),
-    menuColor: Color(0xfff7f7f7)
+    scaffoldBackgroundColor: const Color(0xffE8E8E8),
+    cardColor: const Color.fromARGB(255, 255, 255, 255),
+    menuColor: const Color(0xfff7f7f7),
   );
 
   static final FluentThemeData dark = FluentThemeData(
     brightness: Brightness.dark,
     accentColor: accent,
     visualDensity: VisualDensity.adaptivePlatformDensity,
-    scaffoldBackgroundColor: Color(0xff0F0F0F),
-    cardColor: Color(0xff000000),
-    menuColor: Color(0xff020202)
+    scaffoldBackgroundColor: const Color(0xff0F0F0F),
+    cardColor: const Color(0xff000000),
+    menuColor: const Color(0xff020202),
+   
   );
 }
 
 
 extension FluentThemeDataExt on FluentThemeData {
+  Color get textColor => brightness == Brightness.dark ? Colors.white : Colors.black;
   Color get inverseTextColor => brightness == Brightness.dark ? Colors.black : Colors.white;
   Color get chipColor => brightness == Brightness.dark ? Colors.white : Colors.black;
   Color get borderColor => brightness == Brightness.dark ? Colors.white : Colors.black;

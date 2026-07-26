@@ -11,9 +11,6 @@ extension CategoryTypeExt on CategoryType {
 }
 
 class Category {
-  final int id;
-  final String name;
-  final CategoryType type;
 
   Category({required this.name, required this.type, required this.id});
 
@@ -26,13 +23,12 @@ class Category {
           : CategoryType.income,
     );
   }
+  final int id;
+  final String name;
+  final CategoryType type;
 }
 
 class Entry {
-  final int id;
-  final double amount;
-  final int category;
-  final DateTime addedDate;
 
   Entry({
     required this.id,
@@ -49,12 +45,16 @@ class Entry {
       addedDate: DateTime.parse(e['added_date'] ?? '').ignoringTimezone,
     );
   }
+  final int id;
+  final double amount;
+  final int category;
+  final DateTime addedDate;
 
   Map<String, dynamic> toJson() {
     return {
-      "amount": amount,
-      "category": category,
-      "added_date": addedDate.toIso8601String(),
+      'amount': amount,
+      'category': category,
+      'added_date': addedDate.toIso8601String(),
     };
   }
 
@@ -64,8 +64,6 @@ class Entry {
 }
 
 class EntriesList {
-  final int total;
-  final List<Entry> items;
 
   EntriesList({required this.total, required this.items});
 
@@ -77,17 +75,19 @@ class EntriesList {
           .toList(),
     );
   }
+  final int total;
+  final List<Entry> items;
 }
 
 class Balance {
-  final double totalAmount;
-  final double expenses;
-  final double incomes;
 
   Balance({
     required this.totalAmount,
     required this.expenses,
     required this.incomes,
   });
+  final double totalAmount;
+  final double expenses;
+  final double incomes;
   double get savings => incomes - expenses;
 }

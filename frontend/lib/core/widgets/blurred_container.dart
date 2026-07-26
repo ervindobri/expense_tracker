@@ -62,7 +62,7 @@ class BlurredContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enableBlur = true;
+    const enableBlur = true;
 
     if (kDebugMode || enableBlur) {
       return _buildBlurredVersion();
@@ -72,7 +72,7 @@ class BlurredContainer extends StatelessWidget {
   }
 
   Widget _buildBlurredVersion() {
-    Widget content = Container(
+    final Widget content = Container(
       decoration:
           decoration ??
           BoxDecoration(
@@ -161,7 +161,7 @@ class ConditionalBackdropFilter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enableBlur = true;
+    const enableBlur = true;
 
     if (!enableBlur) {
       return child;
@@ -205,7 +205,7 @@ class BlurredMaterial extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enableBlur =
+    const enableBlur =
         kDebugMode || true;
 
     final solidColor = enableBlur ? color : _getSolidColor(color);

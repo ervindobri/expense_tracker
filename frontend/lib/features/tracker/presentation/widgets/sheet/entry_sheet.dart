@@ -41,228 +41,253 @@ class EntrySheet extends HookConsumerWidget {
       0.0,
       (prod, entry) => prod + entry.amount,
     );
+
+    final scale = useState(0.0);
+
+    // Showing total entries
+    final addDisabled =week == 6;
+
+    useEffect(() {
+      Future.delayed(Durations.short1, () {
+        scale.value = 1.0;
+      });
+      return;
+    }, []);
+
     return Wrap(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: FluentTheme.of(context).cardColor,
-            borderRadius: BorderRadius.circular(40.0),
-            boxShadow: [
-              BoxShadow(
-                color: FluentTheme.of(context).shadowColor.withAlpha(64),
-                blurRadius: 64,
-                spreadRadius: -24,
-              ),
-            ],
-          ),
-          padding: EdgeInsets.all(16.0),
-          margin: EdgeInsets.all(12.0),
-          child: Column(
-            spacing: 16,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    spacing: 8,
-                    children: [
-                      Text(
-                        "Week $week >",
-                        style: theme.bodySmall?.copyWith(height: 1.5),
-                      ),
-                      Text(
-                        category.name,
-                        style: theme.bodyLarge.bold?.copyWith(height: 1.5),
-                      ),
-                    ],
-                  ),
-                  IconButton.filled(
-                    style: IconButton.styleFrom(
-                      backgroundColor: FluentTheme.of(context).menuColor,
-                      iconSize: 16,
-                    ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
-                    icon: Icon(FluentIcons.chrome_close),
-                  ),
-                ],
-              ),
-              AnimatedCrossFade(
-                firstChild: Container(
-                  width: context.width,
-                  padding: EdgeInsets.all(12.0),
-                  decoration: BoxDecoration(
-                    color: FluentTheme.of(context).scaffoldBackgroundColor,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    spacing: 12,
-                    children: [
-                      Icon(FluentIcons.info),
-                      Flexible(
-                        child: Text(
-                          "There are no entries added to this category yet.\nAdd expenses/incomes to show entries.",
-                          style: theme.bodySmall,
-                        ),
-                      ),
-                    ],
-                  ),
+        AnimatedScale(
+          scale: scale.value,
+          alignment: Alignment.bottomCenter,
+          duration: Durations.short4,
+          child: Container(
+            decoration: BoxDecoration(
+              color: FluentTheme.of(context).cardColor,
+              borderRadius: BorderRadius.circular(40.0),
+              boxShadow: [
+                BoxShadow(
+                  color: FluentTheme.of(context).shadowColor.withAlpha(64),
+                  blurRadius: 64,
+                  spreadRadius: -24,
                 ),
-                secondChild: Column(
-                  spacing: 8,
-                  crossAxisAlignment: CrossAxisAlignment.end,
+              ],
+            ),
+            padding: const EdgeInsets.all(16.0),
+            margin: const EdgeInsets.all(12.0),
+            child: Column(
+              spacing: 16,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('edit manually', style: theme.bodySmall.light),
-                    FilterChipList(
-                          initialList: stateEntries.value,
-                          onPressed: (e) {
-                            toastification.show(
-                              context:
-                                  context, // optional if you use ToastificationWrapper
-                              title: Text('Added: ${e.addedDate.formatDate}'),
-                              type: ToastificationType.info,
-                              autoCloseDuration: const Duration(seconds: 2),
-                            );
-                            unawaited(HapticFeedback.lightImpact());
-                          },
-                          onDeleted: (e) async {
-                            try {
-                              final result = await ref
-                                  .read(entryRepositoryProvider)
-                                  .removeEntry(e.id);
-                              if (result) {
-                                stateEntries.value = stateEntries.value
-                                    .where((entry) => entry != e)
-                                    .toList();
-                                unawaited(HapticFeedback.mediumImpact());
-                              }
-                            } catch (e, _) {
-                              if (kDebugMode) {
-                                print(e.toString());
-                              }
-                            }
-                          },
+                    Row(
+                      spacing: 8,
+                      children: [
+                        Text(
+                          '📌 Week $week >',
+                          style: theme.bodySmall?.copyWith(height: 1.5),
                         ),
+                        Text(
+                          category.name,
+                          style: theme.bodyLarge.bold?.copyWith(height: 1.5),
+                        ),
+                      ],
+                    ),
+                    IconButton.filled(
+                      style: IconButton.styleFrom(
+                        backgroundColor: FluentTheme.of(context).menuColor,
+                        iconSize: 16,
+                      ),
+                      onPressed: () {
+                        unawaited(HapticFeedback.lightImpact());
+                        Navigator.pop(context);
+                      },
+                      icon: const Icon(FluentIcons.chrome_close),
+                    ),
                   ],
                 ),
-                crossFadeState: stateEntries.value.isEmpty
-                    ? CrossFadeState.showFirst
-                    : CrossFadeState.showSecond,
-                duration: kThemeAnimationDuration,
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text("Total", style: theme.headlineMedium),
-                  Row(
-                    spacing: 8,
-                    children: [
-                      NumberFlow(
-                        value: total,
-                        style: theme.headlineMedium,
-                        continuous: true,
-                        tabularNums: true,
-                        format: NumberFlowFormat.decimal(maxFraction: 2),
-                      ),
-                      Text("Ft", style: theme.headlineMedium),
-                    ],
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 32.0),
-                child: Center(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 200,
-                        child: TextField(
-                          autofocus: true,
-                          decoration: InputDecoration(
-                            alignLabelWithHint: true,
-                            border: InputBorder.none,
-                            hintStyle: theme.headlineLarge?.copyWith(
-                              color: theme.headlineLarge?.color?.withAlpha(128),
-                            ),
+                AnimatedCrossFade(
+                  firstChild: Container(
+                    width: context.width,
+                    padding: const EdgeInsets.all(12.0),
+                    decoration: BoxDecoration(
+                      color: FluentTheme.of(context).scaffoldBackgroundColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      spacing: 12,
+                      children: [
+                        const Icon(FluentIcons.info),
+                        Flexible(
+                          child: Text(
+                            'There are no entries added to this category yet.\nAdd expenses/incomes to show entries.',
+                            style: theme.bodySmall,
                           ),
-                          keyboardType: TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          textInputAction: TextInputAction.done,
-                          inputFormatters: [
-                            LeadingZeroInputFormatter(),
-                            DecimalInputFormatter(decimalPlaces: 2),
-                          ],
-                          controller: amountController,
-                          textAlign: TextAlign.center,
-                          style: theme.headlineLarge,
                         ),
+                      ],
+                    ),
+                  ),
+                  secondChild: Column(
+                    spacing: 8,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('edit manually', style: theme.bodySmall.light),
+                      FilterChipList(
+                        initialList: stateEntries.value,
+                        onPressed: (e) {
+                          toastification.show(
+                            context:
+                                context, // optional if you use ToastificationWrapper
+                            title: Text('Added: ${e.addedDate.formatDate}'),
+                            type: ToastificationType.info,
+                            alignment: Alignment.topCenter,
+                            style: ToastificationStyle.simple,
+                            autoCloseDuration: const Duration(seconds: 2),
+                          );
+                          unawaited(HapticFeedback.lightImpact());
+                        },
+                        onDeleted: (e) async {
+                          try {
+                            final result = await ref
+                                .read(entryRepositoryProvider)
+                                .removeEntry(e.id);
+                            if (result) {
+                              stateEntries.value = stateEntries.value
+                                  .where((entry) => entry != e)
+                                  .toList();
+                              unawaited(HapticFeedback.mediumImpact());
+                            }
+                          } catch (e, _) {
+                            if (kDebugMode) {
+                              print(e.toString());
+                            }
+                          }
+                        },
                       ),
                     ],
                   ),
+                  crossFadeState: stateEntries.value.isEmpty
+                      ? CrossFadeState.showFirst
+                      : CrossFadeState.showSecond,
+                  duration: kThemeAnimationDuration,
                 ),
-              ),
-              FractionallySizedBox(
-                widthFactor: 1.0,
-                child: PrimaryButton(
-                  onPressed: () async {
-                    //Save entry
-                    try {
-                      final amount =
-                          amountController.text.parseHungarianDecimal;
-                      if (amount != null) {
-                        final entryDate =
-                            week < currentWeek || week > currentWeek
-                            ? DateTime.now().copyWith(
-                                month: ref.read(reportProvider),
-                                day: week.weekLimits.$2,
-                              )
-                            : DateTime.now();
-                        final entry = Entry(
-                          id: -1,
-                          amount: amount,
-                          addedDate: entryDate.ignoringTimezone,
-                          category: category.id,
-                        );
-                        final result = await ref
-                            .read(entryRepositoryProvider)
-                            .addEntry(entry);
-                        stateEntries.value = [
-                          ...stateEntries.value,
-                          entry.copyWith(id: result),
-                        ];
-                        amountController.clear();
-                      }
-                    } catch (e, _) {
-                      if (kDebugMode) {
-                        print("Format error. check text: $e");
-                      }
-                    }
-                  },
-                  icon: FluentIcons.circle_plus,
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  label:
-                      "Add ${category.type == CategoryType.expense ? 'expense' : 'income'}",
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Total', style: theme.headlineMedium),
+                    Row(
+                      spacing: 8,
+                      children: [
+                        NumberFlow(
+                          value: total,
+                          style: theme.headlineMedium,
+                          continuous: true,
+                          tabularNums: true,
+                          format: const NumberFlowFormat.decimal(maxFraction: 2),
+                        ),
+                        Text('Ft', style: theme.headlineMedium),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-              if (week > currentWeek)
-                Center(
-                  child: Row(
-                    spacing: 12,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(FluentIcons.info),
-                      Text("You are editing a future week."),
-                    ],
+                if (!addDisabled)
+                Padding(
+                  padding: const EdgeInsets.only(top: 32.0),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 200,
+                          child: TextField(
+                            autofocus: true,
+                            decoration: InputDecoration(
+                              alignLabelWithHint: true,
+                              border: InputBorder.none,
+                              hintStyle: theme.headlineLarge?.copyWith(
+                                color: theme.headlineLarge?.color?.withAlpha(
+                                  128,
+                                ),
+                              ),
+                            ),
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            textInputAction: TextInputAction.done,
+                            inputFormatters: [
+                              LeadingZeroInputFormatter(),
+                              DecimalInputFormatter(decimalPlaces: 2),
+                            ],
+                            controller: amountController,
+                            textAlign: TextAlign.center,
+                            style: theme.headlineLarge,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              SizedBox(height: keyboardHeight),
-            ],
+                if (!addDisabled)
+                FractionallySizedBox(
+                  widthFactor: 1.0,
+                  child: PrimaryButton(
+                    onPressed: () async {
+                      //Save entry
+                      try {
+                        final amount =
+                            amountController.text.parseHungarianDecimal;
+                        if (amount != null) {
+                          final entryDate =
+                              week < currentWeek || week > currentWeek
+                              ? DateTime.now().copyWith(
+                                  month: ref.read(reportProvider),
+                                  day: week.weekLimits.$2,
+                                )
+                              : DateTime.now();
+                          final entry = Entry(
+                            id: -1,
+                            amount: amount,
+                            addedDate: entryDate.ignoringTimezone,
+                            category: category.id,
+                          );
+                          final result = await ref
+                              .read(entryRepositoryProvider)
+                              .addEntry(entry);
+                          stateEntries.value = [
+                            ...stateEntries.value,
+                            entry.copyWith(id: result),
+                          ];
+                          amountController.clear();
+                        }
+                      } catch (e, _) {
+                        if (kDebugMode) {
+                          print('Format error. check text: $e');
+                        }
+                      }
+                    },
+                    icon: FluentIcons.circle_plus,
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    label:
+                        "Add ${category.type == CategoryType.expense ? 'expense' : 'income'}",
+                  ),
+                ),
+                if (week > currentWeek && !addDisabled)
+                  const Center(
+                    child: Row(
+                      spacing: 12,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(FluentIcons.info),
+                        Text('You are editing a future week.'),
+                      ],
+                    ),
+                  ),
+                SizedBox(height: keyboardHeight),
+              ],
+            ),
           ),
         ),
       ],
@@ -280,7 +305,9 @@ class LeadingZeroInputFormatter extends TextInputFormatter {
   ) {
     final text = newValue.text;
 
-    if (text.isEmpty) return newValue;
+    if (text.isEmpty) {
+      return newValue;
+    }
 
     // Allow a lone "0", or "0." while typing a decimal (e.g. "0.5")
     if (text == '0' || text.startsWith('0.')) {
@@ -313,9 +340,9 @@ class LeadingZeroInputFormatter extends TextInputFormatter {
 /// - only the first comma is kept; any additional commas are stripped
 /// - optionally caps decimal places (default: 2, matching CurrencyFormatter)
 class DecimalInputFormatter extends TextInputFormatter {
-  final int? decimalPlaces;
 
   DecimalInputFormatter({this.decimalPlaces = 2});
+  final int? decimalPlaces;
 
   @override
   TextEditingValue formatEditUpdate(
@@ -340,7 +367,9 @@ class DecimalInputFormatter extends TextInputFormatter {
       }
     }
 
-    if (text == newValue.text) return newValue;
+    if (text == newValue.text) {
+      return newValue;
+    }
 
     final lengthDiff = newValue.text.length - text.length;
     final newOffset = (newValue.selection.baseOffset - lengthDiff).clamp(

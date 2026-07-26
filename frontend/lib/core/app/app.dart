@@ -47,7 +47,7 @@ class HomeShell extends HookConsumerWidget {
     return Scaffold(
       backgroundColor: FluentTheme.of(context).scaffoldBackgroundColor,
       floatingActionButton: balance?.incomes == 0.0
-          ? PrimaryButton(onPressed: () {}, label: "Add income")
+          ? PrimaryButton(onPressed: () {}, label: 'Add income')
           : const SizedBox(),
       body: Align(
         alignment: Alignment.center,
@@ -57,7 +57,7 @@ class HomeShell extends HookConsumerWidget {
             alignment: Alignment.topCenter,
             // spacing: 32,
             children: [
-              Positioned(top: 0, left: 0, right: 0, child: const BalanceView()),
+              const Positioned(top: 0, left: 0, right: 0, child: BalanceView()),
               Positioned.fill(
                 child: PassthroughContainer(
                   topPassThroughHeight: balanceHeight,

@@ -27,6 +27,22 @@ extension DoubleExt on double {
 
 extension IntExt on int {
 
+  String get toMonthLabel => switch (this) {
+    1 => 'January',
+    2 => 'February',
+    3 => 'March',
+    4 => 'April',
+    5 => 'May',
+    6 => 'June',
+    7 => 'July',
+    8 => 'August',
+    9 => 'September',
+    10 => 'October',
+    11 => 'November',
+    12 => 'December',
+    _ => toString(),
+  };
+
     (int first, int last) get weekLimits {
     return switch (this) {
       1 => (1, 6),
@@ -62,6 +78,7 @@ extension DateTimeExt on DateTime {
 }
 
 
+// ignore: avoid_classes_with_only_static_members
 class CurrencyFormatter {
   /// Formats a numeric amount as Hungarian Forint, e.g.:
   /// 123        → "123 Ft"

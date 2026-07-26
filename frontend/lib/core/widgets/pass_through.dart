@@ -2,14 +2,14 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
 class PassthroughContainer extends SingleChildRenderObjectWidget {
-  final double topPassThroughHeight;
-  final bool enabled;
 
   const PassthroughContainer({
     super.key,
     required this.topPassThroughHeight,
     required super.child, this.enabled = true,
   });
+  final double topPassThroughHeight;
+  final bool enabled;
 
   @override
   RenderPassthroughContainer createRenderObject(BuildContext context) {
@@ -25,10 +25,10 @@ class PassthroughContainer extends SingleChildRenderObjectWidget {
 }
 
 class RenderPassthroughContainer extends RenderProxyBox {
-  double topPassThroughHeight;
-  bool enabled;
 
   RenderPassthroughContainer({required this.topPassThroughHeight, required this.enabled});
+  double topPassThroughHeight;
+  bool enabled;
 
   @override
   bool hitTest(BoxHitTestResult result, {required Offset position}) {

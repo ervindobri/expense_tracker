@@ -28,6 +28,13 @@ class _FilterChipListState<T> extends State<FilterChipList<T>> {
   @override
   void initState() {
     _filters = List<T>.from(widget.initialList);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.animateTo(
+        controller.position.maxScrollExtent,
+        duration: Durations.short3,
+        curve: Curves.decelerate,
+      );
+    });
     super.initState();
   }
 
@@ -94,9 +101,7 @@ class _FilterChipListState<T> extends State<FilterChipList<T>> {
     if (widget.initialList.length > _filters.length) {
       // Only the items that are actually new, in order.
       final newItems = widget.initialList.sublist(_filters.length);
-      for (final item in newItems) {
-        _addFilter(item);
-      }
+      newItems.forEach(_addFilter);
 
       if (controller.hasClients && _filters.length > 2) {
         controller.animateTo(
@@ -111,9 +116,9 @@ class _FilterChipListState<T> extends State<FilterChipList<T>> {
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 150),
       width: context.width,
-      padding: EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       decoration: BoxDecoration(
         color: FluentTheme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
@@ -124,7 +129,7 @@ class _FilterChipListState<T> extends State<FilterChipList<T>> {
           key: _listKey,
           controller: controller,
           scrollDirection: Axis.horizontal,
-          padding: EdgeInsets.symmetric(horizontal: 12.0),
+          padding: const EdgeInsets.symmetric(horizontal: 12.0),
           initialItemCount: _filters.length,
           itemBuilder: (context, index, animation) {
             return _buildChip(index, _filters[index], animation);

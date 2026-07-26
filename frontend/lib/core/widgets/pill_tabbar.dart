@@ -1,11 +1,10 @@
+import 'dart:async';
+
 import 'package:fluent_ui/fluent_ui.dart' show FluentTheme;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 class ExpenseIncomeTabBar<T> extends StatefulWidget {
-  final T? initialTab;
-  final ValueChanged<T> onChanged;
-  final String Function(T val) itemToString;
-  final List<T> items;
 
   const ExpenseIncomeTabBar({
     super.key,
@@ -14,6 +13,10 @@ class ExpenseIncomeTabBar<T> extends StatefulWidget {
     required this.itemToString,
     required this.items,
   });
+  final T? initialTab;
+  final ValueChanged<T> onChanged;
+  final String Function(T val) itemToString;
+  final List<T> items;
 
   @override
   State<ExpenseIncomeTabBar> createState() => _ExpenseIncomeTabBarState<T>();
@@ -34,8 +37,11 @@ class _ExpenseIncomeTabBarState<T> extends State<ExpenseIncomeTabBar<T>> {
   }
 
   void _select(T tab) {
-    if (tab == _selected) return;
+    if (tab == _selected) {
+      return;
+    }
     setState(() => _selected = tab);
+    unawaited(HapticFeedback.selectionClick());
     widget.onChanged(tab);
   }
 
@@ -50,7 +56,7 @@ class _ExpenseIncomeTabBarState<T> extends State<ExpenseIncomeTabBar<T>> {
       padding: const EdgeInsets.all(4),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final tabWidth = 120.0;
+          const tabWidth = 120.0;
           return Stack(
             children: [
               // Sliding highlight

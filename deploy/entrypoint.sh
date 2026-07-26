@@ -1,9 +1,9 @@
 #!/bin/sh
 set -e
 
-# python manage.py collectstatic --noinput
 
 python manage.py migrate --noinput
+python manage.py collectstatic --noinput
 
 # Run script to import entries from Excel sheet
 python manage.py import_expenses import/Spent.xlsx

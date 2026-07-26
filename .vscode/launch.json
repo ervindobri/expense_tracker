@@ -8,7 +8,8 @@
             "name": "frontend",
             "cwd": "frontend",
             "request": "launch",
-            "type": "dart"
+            "type": "dart",
+            "args": ["-d", "web-server","--web-port", "57657"],
         },
         {
             "name": "frontend (profile mode)",

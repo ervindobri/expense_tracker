@@ -1,9 +1,11 @@
 // core/widgets/context_menu_overlay.dart
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:fluent_ui/fluent_ui.dart' show FluentTheme;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:frontend/core/widgets/blurred_container.dart';
 
@@ -38,6 +40,8 @@ class ContextMenuOverlay<T> extends HookWidget {
       }
       final triggerRect = box.localToGlobal(Offset.zero) & box.size;
 
+      unawaited(HapticFeedback.lightImpact());
+
       final overlay = Overlay.of(context);
       late OverlayEntry entry;
       void close() {
@@ -62,9 +66,9 @@ class ContextMenuOverlay<T> extends HookWidget {
       isOpen.value = true;
     }
 
-    return GestureDetector(
+    return InkWell(
       onTap: openOverlay,
-      behavior: HitTestBehavior.opaque,
+      // behavior: HitTestBehavior.opaque,
       child: KeyedSubtree(key: triggerKey.value, child: child),
     );
   }
@@ -178,6 +182,7 @@ class _ContextMenuOverlayContentState<T>
               width: rect.width,
               height: rect.height,
               child: ClipRRect(
+                      borderRadius: BorderRadius.circular(radius),
                 child: BlurredMaterial(
                   color: color.withValues(alpha: 0.65,),
                   sigmaX: 8,

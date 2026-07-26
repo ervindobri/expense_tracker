@@ -34,6 +34,7 @@ class EntrySheet extends HookConsumerWidget {
     final currentWeek = DateTime.now().currentWeek;
     final theme = Theme.of(context).textTheme;
     final amountController = useTextEditingController();
+    final amountField = useFocusNode();
     final keyboardHeight = context.bottomPadding;
     final stateEntries = useState(entries);
 
@@ -45,7 +46,7 @@ class EntrySheet extends HookConsumerWidget {
     final scale = useState(0.0);
 
     // Showing total entries
-    final addDisabled =week == 6;
+    final addDisabled = week == 6;
 
     useEffect(() {
       Future.delayed(Durations.short1, () {
@@ -54,7 +55,43 @@ class EntrySheet extends HookConsumerWidget {
       return;
     }, []);
 
+    Future<void> submitEntry() async {
+      //Save entry
+      try {
+        final amount = amountController.text.parseHungarianDecimal;
+        if (amount != null) {
+          final entryDate = week < currentWeek || week > currentWeek
+              ? DateTime.now().copyWith(
+                  month: ref.read(reportProvider),
+                  day: week.weekLimits.$2,
+                )
+              : DateTime.now();
+          final entry = Entry(
+            id: -1,
+            amount: amount,
+            addedDate: entryDate.ignoringTimezone,
+            category: category.id,
+          );
+          final result = await ref
+              .read(entryRepositoryProvider)
+              .addEntry(entry);
+          stateEntries.value = [
+            ...stateEntries.value,
+            entry.copyWith(id: result),
+          ];
+          amountController.clear();
+          amountField.requestFocus();
+        }
+      } catch (e, _) {
+        if (kDebugMode) {
+          print('Format error. check text: $e');
+        }
+      }
+    }
+
     return Wrap(
+      alignment: WrapAlignment.center,
+      runAlignment: WrapAlignment.center,
       children: [
         AnimatedScale(
           scale: scale.value,
@@ -86,7 +123,7 @@ class EntrySheet extends HookConsumerWidget {
                       spacing: 8,
                       children: [
                         Text(
-                          '📌 Week $week >',
+                          '📌 ${week == 6 ?'Total' :'Week $week'} >',
                           style: theme.bodySmall?.copyWith(height: 1.5),
                         ),
                         Text(
@@ -158,6 +195,7 @@ class EntrySheet extends HookConsumerWidget {
                                   .where((entry) => entry != e)
                                   .toList();
                               unawaited(HapticFeedback.mediumImpact());
+                              amountField.requestFocus();
                             }
                           } catch (e, _) {
                             if (kDebugMode) {
@@ -185,7 +223,9 @@ class EntrySheet extends HookConsumerWidget {
                           style: theme.headlineMedium,
                           continuous: true,
                           tabularNums: true,
-                          format: const NumberFlowFormat.decimal(maxFraction: 2),
+                          format: const NumberFlowFormat.decimal(
+                            maxFraction: 2,
+                          ),
                         ),
                         Text('Ft', style: theme.headlineMedium),
                       ],
@@ -193,86 +233,58 @@ class EntrySheet extends HookConsumerWidget {
                   ],
                 ),
                 if (!addDisabled)
-                Padding(
-                  padding: const EdgeInsets.only(top: 32.0),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 200,
-                          child: TextField(
-                            autofocus: true,
-                            decoration: InputDecoration(
-                              alignLabelWithHint: true,
-                              border: InputBorder.none,
-                              hintStyle: theme.headlineLarge?.copyWith(
-                                color: theme.headlineLarge?.color?.withAlpha(
-                                  128,
+                  Padding(
+                    padding: const EdgeInsets.only(top: 32.0),
+                    child: Center(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 200,
+                            child: TextField(
+                              autofocus: true,
+                              focusNode: amountField,
+                              decoration: InputDecoration(
+                                alignLabelWithHint: true,
+                                border: InputBorder.none,
+                                hintStyle: theme.headlineLarge?.copyWith(
+                                  color: theme.headlineLarge?.color?.withAlpha(
+                                    128,
+                                  ),
                                 ),
                               ),
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              textInputAction: TextInputAction.send,
+                              onSubmitted: (value) {
+                                submitEntry();
+                              },
+                              inputFormatters: [
+                                LeadingZeroInputFormatter(),
+                                DecimalInputFormatter(decimalPlaces: 2),
+                              ],
+                              controller: amountController,
+                              textAlign: TextAlign.center,
+                              style: theme.headlineLarge,
                             ),
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            textInputAction: TextInputAction.done,
-                            inputFormatters: [
-                              LeadingZeroInputFormatter(),
-                              DecimalInputFormatter(decimalPlaces: 2),
-                            ],
-                            controller: amountController,
-                            textAlign: TextAlign.center,
-                            style: theme.headlineLarge,
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
                 if (!addDisabled)
-                FractionallySizedBox(
-                  widthFactor: 1.0,
-                  child: PrimaryButton(
-                    onPressed: () async {
-                      //Save entry
-                      try {
-                        final amount =
-                            amountController.text.parseHungarianDecimal;
-                        if (amount != null) {
-                          final entryDate =
-                              week < currentWeek || week > currentWeek
-                              ? DateTime.now().copyWith(
-                                  month: ref.read(reportProvider),
-                                  day: week.weekLimits.$2,
-                                )
-                              : DateTime.now();
-                          final entry = Entry(
-                            id: -1,
-                            amount: amount,
-                            addedDate: entryDate.ignoringTimezone,
-                            category: category.id,
-                          );
-                          final result = await ref
-                              .read(entryRepositoryProvider)
-                              .addEntry(entry);
-                          stateEntries.value = [
-                            ...stateEntries.value,
-                            entry.copyWith(id: result),
-                          ];
-                          amountController.clear();
-                        }
-                      } catch (e, _) {
-                        if (kDebugMode) {
-                          print('Format error. check text: $e');
-                        }
-                      }
-                    },
-                    icon: FluentIcons.circle_plus,
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    label:
-                        "Add ${category.type == CategoryType.expense ? 'expense' : 'income'}",
+                  FractionallySizedBox(
+                    widthFactor: 1.0,
+                    child: PrimaryButton(
+                      onPressed: submitEntry,
+                      icon: FluentIcons.circle_plus,
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      label:
+                          "Add ${category.type == CategoryType.expense ? 'expense' : 'income'}",
+                    ),
                   ),
-                ),
                 if (week > currentWeek && !addDisabled)
                   const Center(
                     child: Row(
@@ -340,7 +352,6 @@ class LeadingZeroInputFormatter extends TextInputFormatter {
 /// - only the first comma is kept; any additional commas are stripped
 /// - optionally caps decimal places (default: 2, matching CurrencyFormatter)
 class DecimalInputFormatter extends TextInputFormatter {
-
   DecimalInputFormatter({this.decimalPlaces = 2});
   final int? decimalPlaces;
 

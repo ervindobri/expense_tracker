@@ -411,16 +411,37 @@ class EntriesView extends HookConsumerWidget {
                                         unawaited(
                                           HapticFeedback.selectionClick(),
                                         );
-                                        await showModalBottomSheet(
-                                          context: context,
-                                          isScrollControlled: true,
-                                          backgroundColor: Colors.transparent,
-                                          builder: (_) => EntrySheet(
-                                            week: week.value,
-                                            category: cat,
-                                            entries: entriesForCatWeek,
-                                          ),
-                                        );
+                                        if (kIsWeb) {
+                                          await showDialog(
+                                            context: context,
+                                            builder: (_) {
+                                              return Dialog(
+                                                backgroundColor: Colors.transparent,
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      maxWidth: 540,
+                                                    ),
+                                                child: EntrySheet(
+                                                  week: week.value,
+                                                  category: cat,
+                                                  entries:
+                                                      entriesForCatWeek,
+                                                ),
+                                              );
+                                            },
+                                          );
+                                        } else {
+                                          await showModalBottomSheet(
+                                            context: context,
+                                            isScrollControlled: true,
+                                            backgroundColor: Colors.transparent,
+                                            builder: (_) => EntrySheet(
+                                              week: week.value,
+                                              category: cat,
+                                              entries: entriesForCatWeek,
+                                            ),
+                                          );
+                                        }
                                         ref.invalidate(entriesProvider);
                                       },
                                       child: Padding(

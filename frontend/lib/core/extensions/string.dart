@@ -17,7 +17,7 @@ extension StringExt on String? {
 
 extension DoubleExt on double {
   String get formatCurrency {
-    return CurrencyFormatter.format(this);
+    return CurrencyFormatter.format(this, alwaysShowDecimals: true);
   }
 
   String get formatCurrencySymbol {

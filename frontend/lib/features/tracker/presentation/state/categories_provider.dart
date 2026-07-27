@@ -1,5 +1,5 @@
 
-import 'package:frontend/features/tracker/domain/models/entry.dart';
+import 'package:frontend/features/tracker/domain/models/category.dart';
 import 'package:frontend/features/tracker/domain/repositories/entries_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 

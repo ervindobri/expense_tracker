@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
-import 'package:fluent_ui/fluent_ui.dart' show FluentTheme, FluentIcons;
+import 'package:fluent_ui/fluent_ui.dart' show FluentTheme;
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,6 +14,7 @@ import 'package:frontend/core/extensions/text_style.dart';
 import 'package:frontend/core/widgets/context_menu_overlay.dart';
 import 'package:frontend/core/widgets/pill_tabbar.dart';
 import 'package:frontend/core/widgets/snap_scroll_physics.dart';
+import 'package:frontend/features/tracker/domain/models/category.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 import 'package:frontend/features/tracker/presentation/state/categories_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/entries_provider.dart';
@@ -21,6 +22,7 @@ import 'package:frontend/features/tracker/presentation/state/passthrough_enabled
 import 'package:frontend/features/tracker/presentation/state/report_notifier.dart';
 import 'package:frontend/features/tracker/presentation/widgets/sheet/entry_sheet.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:number_flow_flutter/number_flow_flutter.dart';
 
 enum WeekSelector { one, two, three, four, five, all }
@@ -91,9 +93,12 @@ class EntriesView extends HookConsumerWidget {
             ref.invalidate(monthlyEntriesProvider);
             unawaited(
               Future.wait([
-                HapticFeedback.vibrate(),
                 HapticFeedback.selectionClick(),
+                Future.delayed(Durations.short2),
                 HapticFeedback.selectionClick(),
+                Future.delayed(Durations.short2),
+                HapticFeedback.selectionClick(),
+                Future.delayed(Durations.short2),
               ]),
             );
             return Future<void>.value();
@@ -193,10 +198,7 @@ class EntriesView extends HookConsumerWidget {
                                         ? 'This month'
                                         : month.toMonthLabel,
                                   ),
-                                  const Icon(
-                                    FluentIcons.chevron_down,
-                                    size: 12,
-                                  ),
+                                  const Icon(LucideIcons.chevronDown, size: 12),
                                 ],
                               ),
                             ),
@@ -359,121 +361,212 @@ class EntriesView extends HookConsumerWidget {
 
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 32.0 * (categories.value?.length ?? 0) + 96 + 32.0,
+                  height:
+                      32.0 * (categories.value?.length ?? 0) + 96 + 32.0 + 16,
                   child: Material(
                     color: FluentTheme.of(context).cardColor,
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                      child: Column(
-                        children: <Widget>[
-                          ...categories.value
-                                  ?.where(
-                                    (Category cat) =>
-                                        cat.type == selectedType.value,
-                                  )
-                                  .map((Category cat) {
-                                    final (int, int) weeklimits =
-                                        week.value.weekLimits;
-                                    final List<Entry>? entriesForCatWeek =
-                                        entries.value?.items
-                                            .where(
-                                              (e) => isTotal.value
-                                                  ? e.category == cat.id
-                                                  : e.category == cat.id &&
-                                                        (e.addedDate.isDayAfterOrSame(
-                                                              firstDayOfMonth
-                                                                  .copyWith(
-                                                                    day:
-                                                                        weeklimits
+                      child: Builder(
+                        builder: (context) {
+                          final (int, int) weeklimits = week.value.weekLimits;
+                          final weeklyEntries =
+                              entries.value?.items.where(
+                                (e) =>
+                                    (categories.value ?? [])
+                                        .where(
+                                          (e) => e.type == selectedType.value,
+                                        )
+                                        .map((e) => e.id)
+                                        .contains(e.category) &&
+                                    e.addedDate.isDayAfterOrSame(
+                                      firstDayOfMonth.copyWith(
+                                        day: weeklimits.$1,
+                                      ),
+                                    ) &&
+                                    e.addedDate.isDayBeforeOrsame(
+                                      firstDayOfMonth.copyWith(
+                                        day: weeklimits.$2,
+                                      ),
+                                    ),
+                              ) ??
+                              [];
+                          final weeklyTotal = weeklyEntries.fold<double>(
+                            0.0,
+                            (prod, entry) => prod + entry.amount,
+                          );
+                          final isExpense =
+                              selectedType.value == CategoryType.expense;
+                          return Column(
+                            children: <Widget>[
+                              if (week.value < 6)
+                                Column(
+                                  children: [
+                                    ListTile(
+                                      dense: true,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 12.0,
+                                          ),
+                                      title: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Total',
+                                            style: theme.bodyMedium.bold,
+                                          ),
+                                          Text(
+                                            '${weeklyTotal.formatCurrency}',
+                                            style: theme.bodyMedium?.bold
+                                                ?.copyWith(
+                                                  color:
+                                                      selectedType.value ==
+                                                          CategoryType.expense
+                                                      ? weeklyTotal > 100000
+                                                            ? FluentTheme.of(
+                                                                context,
+                                                              ).failureColor
+                                                            : null
+                                                      : weeklyTotal > 100000
+                                                      ? FluentTheme.of(
+                                                          context,
+                                                        ).successColor
+                                                      : null,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ...categories.value
+                                      ?.where(
+                                        (Category cat) =>
+                                            cat.type == selectedType.value,
+                                      )
+                                      .map((Category cat) {
+                                        final List<Entry>? entriesForCatWeek =
+                                            entries.value?.items
+                                                .where(
+                                                  (e) => isTotal.value
+                                                      ? e.category == cat.id
+                                                      : e.category == cat.id &&
+                                                            (e.addedDate.isDayAfterOrSame(
+                                                                  firstDayOfMonth
+                                                                      .copyWith(
+                                                                        day: weeklimits
                                                                             .$1,
-                                                                  ),
-                                                            ) &&
-                                                            e.addedDate
-                                                                .isDayBeforeOrsame(
+                                                                      ),
+                                                                ) &&
+                                                                e.addedDate.isDayBeforeOrsame(
                                                                   firstDayOfMonth
                                                                       .copyWith(
                                                                         day: weeklimits
                                                                             .$2,
                                                                       ),
                                                                 )),
-                                            )
-                                            .toList() ??
-                                        <Entry>[];
-                                    final double totalForCategory =
-                                        entriesForCatWeek!.fold<double>(
-                                          0.0,
-                                          (curre, Entry b) => curre + b.amount,
-                                        );
-                                    return InkWell(
-                                      splashColor: Colors.transparent,
-                                      borderRadius: BorderRadius.circular(32),
-                                      onTap: () async {
-                                        unawaited(
-                                          HapticFeedback.selectionClick(),
-                                        );
-                                        if (kIsWeb) {
-                                          await showDialog(
-                                            context: context,
-                                            builder: (_) {
-                                              return Dialog(
-                                                backgroundColor: Colors.transparent,
-                                                constraints:
-                                                    const BoxConstraints(
-                                                      maxWidth: 540,
+                                                )
+                                                .toList() ??
+                                            <Entry>[];
+                                        final double totalForCategory =
+                                            entriesForCatWeek!.fold<double>(
+                                              0.0,
+                                              (curre, Entry b) =>
+                                                  curre + b.amount,
+                                            );
+                                        return InkWell(
+                                          splashColor: Colors.transparent,
+                                          borderRadius: BorderRadius.circular(
+                                            32,
+                                          ),
+                                          onTap: () async {
+                                            unawaited(
+                                              HapticFeedback.selectionClick(),
+                                            );
+                                            if (kIsWeb) {
+                                              await showDialog(
+                                                context: context,
+                                                builder: (_) {
+                                                  return Dialog(
+                                                    backgroundColor:
+                                                        Colors.transparent,
+                                                    constraints:
+                                                        const BoxConstraints(
+                                                          maxWidth: 540,
+                                                        ),
+                                                    child: EntrySheet(
+                                                      week: week.value,
+                                                      category: cat,
+                                                      entries:
+                                                          entriesForCatWeek,
                                                     ),
-                                                child: EntrySheet(
+                                                  );
+                                                },
+                                              );
+                                            } else {
+                                              await showModalBottomSheet(
+                                                context: context,
+                                                isScrollControlled: true,
+                                                backgroundColor:
+                                                    Colors.transparent,
+                                                builder: (_) => EntrySheet(
                                                   week: week.value,
                                                   category: cat,
-                                                  entries:
-                                                      entriesForCatWeek,
+                                                  entries: entriesForCatWeek,
                                                 ),
                                               );
-                                            },
-                                          );
-                                        } else {
-                                          await showModalBottomSheet(
-                                            context: context,
-                                            isScrollControlled: true,
-                                            backgroundColor: Colors.transparent,
-                                            builder: (_) => EntrySheet(
-                                              week: week.value,
-                                              category: cat,
-                                              entries: entriesForCatWeek,
+                                            }
+                                            ref.invalidate(entriesProvider);
+                                          },
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 12.0,
+                                              horizontal: 12.0,
                                             ),
-                                          );
-                                        }
-                                        ref.invalidate(entriesProvider);
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 12.0,
-                                          horizontal: 12.0,
-                                        ),
-                                        child: SizedBox(
-                                          height: 24,
-                                          child: Center(
-                                            child: Row(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment
-                                                      .spaceBetween,
-                                              children: <Widget>[
-                                                Text(cat.name),
-                                                NumberFlow(
-                                                  value: totalForCategory,
-                                                  continuous: true,
-                                                  format:
-                                                      const NumberFlowFormat.decimal(),
+                                            child: SizedBox(
+                                              height: 24,
+                                              child: Center(
+                                                child: Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: <Widget>[
+                                                    Text(cat.name),
+                                                    NumberFlow(
+                                                      value: totalForCategory,
+                                                      continuous: true,
+                                                      prefix:
+                                                          totalForCategory <= 0
+                                                          ? null
+                                                          : isExpense
+                                                          ? '-'
+                                                          : '+',
+                                                      locale: ref
+                                                          .read(localeProvider)
+                                                          .languageCode,
+
+                                                      format:
+                                                          const NumberFlowFormat.currency(
+                                                            maxFraction: 2,
+
+                                                            sign: SignDisplay
+                                                                .negative,
+                                                            currencyCode: '',
+                                                          ),
+                                                    ),
+                                                  ],
                                                 ),
-                                              ],
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ),
-                                    );
-                                  })
-                                  .toList() ??
-                              <Widget>[],
-                        ],
+                                        );
+                                      })
+                                      .toList() ??
+                                  <Widget>[],
+                            ],
+                          );
+                        },
                       ),
                     ),
                   ),

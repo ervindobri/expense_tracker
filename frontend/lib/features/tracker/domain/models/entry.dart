@@ -1,33 +1,5 @@
 import 'package:frontend/core/extensions/date_time.dart';
 
-enum CategoryType { expense, income }
-
-
-extension CategoryTypeExt on CategoryType {
-  String get displayName => switch (this) {
-    CategoryType.expense => '🛍️ Expenses',
-    CategoryType.income => '💰 Incomes',
-  };
-}
-
-class Category {
-
-  Category({required this.name, required this.type, required this.id});
-
-  factory Category.from(Map<String, dynamic> json) {
-    return Category(
-      id: json['id'] ?? 0,
-      name: json['name'] ?? '',
-      type: json['category_type'] == 'E'
-          ? CategoryType.expense
-          : CategoryType.income,
-    );
-  }
-  final int id;
-  final String name;
-  final CategoryType type;
-}
-
 class Entry {
 
   Entry({
@@ -35,6 +7,7 @@ class Entry {
     required this.amount,
     required this.addedDate,
     required this.category,
+    this.notes = '',
   });
   factory Entry.from(Map<String, dynamic> e) {
     return Entry(
@@ -43,23 +16,32 @@ class Entry {
       // the API serializes the store as its integer primary key
       category: e['category'] ?? 0,
       addedDate: DateTime.parse(e['added_date'] ?? '').ignoringTimezone,
+      notes: e['notes'] ?? '',
     );
   }
   final int id;
   final double amount;
   final int category;
   final DateTime addedDate;
+  final String notes;
 
   Map<String, dynamic> toJson() {
     return {
       'amount': amount,
       'category': category,
       'added_date': addedDate.toIso8601String(),
+      'notes': notes,
     };
   }
 
-  Entry copyWith({required int id}) {
-    return Entry(id: id, amount: amount, addedDate: addedDate, category: category,);
+  Entry copyWith({int? id, String? notes}) {
+    return Entry(
+      id: id ?? this.id,
+      amount: amount,
+      addedDate: addedDate,
+      category: category,
+      notes: notes ?? this.notes,
+    );
   }
 }
 

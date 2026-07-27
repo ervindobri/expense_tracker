@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:frontend/core/network/dio_client.dart';
+import 'package:frontend/features/tracker/domain/models/category.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -13,6 +14,8 @@ abstract class IEntryRepository {
   Future<int> addEntry(Entry entry);
 
   Future<bool> removeEntry(int id);
+
+  Future<void> updateEntry(Entry copyWith);
 }
 
 class TransactionEntryRepository implements IEntryRepository {
@@ -94,6 +97,24 @@ class TransactionEntryRepository implements IEntryRepository {
       throw Exception(
         'delete unsuccessful: ${result.statusCode} ${result.statusMessage}',
       );
+    } catch (e, _) {
+      if (kDebugMode) {
+        print(e);
+      }
+      rethrow;
+    }
+  }
+  
+  @override
+  Future<void> updateEntry(Entry entry) async {
+    try {
+      final body = entry.toJson();
+      final result = await client.put('entries/${entry.id}/', data: body);
+      if (result.statusCode != null && result.statusCode! > 299) {
+        throw Exception(
+          'PATCH unsuccessful: ${result.statusCode} ${result.statusMessage}',
+        );
+      }
     } catch (e, _) {
       if (kDebugMode) {
         print(e);

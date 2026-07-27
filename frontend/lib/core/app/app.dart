@@ -2,6 +2,7 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/material.dart'
     hide Tooltip, IconButton, ElevatedButton, TextButton;
 import 'package:frontend/core/app/theme.dart';
+import 'package:frontend/core/network/internet_connection_provider.dart';
 import 'package:frontend/core/widgets/pass_through.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
@@ -10,19 +11,44 @@ import 'package:frontend/features/tracker/presentation/state/report_notifier.dar
 import 'package:frontend/features/tracker/presentation/widgets/balance_view.dart';
 import 'package:frontend/features/tracker/presentation/widgets/entries_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:toastification/toastification.dart';
 
+
+final localeProvider = Provider<Locale>((_) => const Locale('hu', 'HU'));
 class App extends ConsumerWidget {
   const App({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    ref.watch(internetConnectionProvider);
+
+    ref.listen<InternetConnectionStatus>(internetConnectionProvider, (_, next) {
+      if (next == InternetConnectionStatus.offline) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          toastification.show(
+            context: context,
+            direction: TextDirection.ltr,
+            type: ToastificationType.error,
+            style: ToastificationStyle.flat,
+            title: const Text('No internet connection'),
+            description: const Text(
+              'Please check your connection and try again.',
+            ),
+            alignment: Alignment.topCenter,
+            autoCloseDuration: const Duration(seconds: 4),
+            showProgressBar: false,
+          );
+        });
+      }
+    });
 
     return FluentApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
+      locale: ref.read(localeProvider),
       home: const HomeShell(),
     );
   }

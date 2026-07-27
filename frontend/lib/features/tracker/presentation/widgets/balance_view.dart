@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:fluent_ui/fluent_ui.dart' hide Colors;
-import 'package:flutter/material.dart' hide IconButton, Tooltip;
+import 'package:flutter/material.dart' hide IconButton, Tooltip, ButtonStyle;
 import 'package:flutter/services.dart';
 import 'package:frontend/core/app/app.dart';
 import 'package:frontend/core/app/theme.dart';
@@ -10,6 +10,7 @@ import 'package:frontend/core/widgets/context_menu_overlay.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/report_notifier.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:number_flow_flutter/number_flow_flutter.dart';
 
 class BalanceView extends HookConsumerWidget {
@@ -19,8 +20,9 @@ class BalanceView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = FluentTheme.of(context).brightness == Brightness.dark;
     // final compact = isCompactLayout(context);
-    final selected = ref.watch(reportProvider);
-    final balanceForMonth = ref.watch(balanceProvider(selected));
+    final month = ref.watch(reportProvider);
+    final balanceForMonth = ref.watch(balanceProvider(month));
+    final currentMonth = DateTime.now().month;
     return Container(
       height: balanceHeight, //fixed
       width: MediaQuery.sizeOf(context).width,
@@ -43,7 +45,11 @@ class BalanceView extends HookConsumerWidget {
                 child: ContextMenuOverlay<int>(
                   title: 'Select month',
                   itemBuilder: (BuildContext context, int item) =>
-                      Text((item + 1).toMonthLabel),
+                      Text(
+                    item + 1 == currentMonth
+                        ? 'This month'
+                        : (item + 1).toMonthLabel,
+                  ),
                   onSelected: (item) {
                     ref.read(reportProvider.notifier).set(item + 1);
                     unawaited(HapticFeedback.mediumImpact());
@@ -53,8 +59,12 @@ class BalanceView extends HookConsumerWidget {
                     spacing: 8,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(selected.toMonthLabel),
-                      const Icon(FluentIcons.chevron_down, size: 12),
+                      Text(
+                        month == currentMonth
+                            ? 'This month'
+                            : month.toMonthLabel,
+                      ),
+                      const Icon(LucideIcons.chevronDown, size: 12),
                     ],
                   ),
                 ),
@@ -68,10 +78,10 @@ class BalanceView extends HookConsumerWidget {
                     spacing: 12,
                     children: [
                       Text(
-                        '⚖️ TOTAL BALANCE',
+                        'TOTAL BALANCE',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).hintColor,
-                          fontWeight: FontWeight.w100,
+                          fontWeight: FontWeight.w200,
                         ),
                       ),
                       SizedBox(
@@ -83,6 +93,7 @@ class BalanceView extends HookConsumerWidget {
                             NumberFlow(
                               value: balanceForMonth.value?.totalAmount ?? 0.0,
                               motionBlur: 4.0,
+                              locale: ref.read(localeProvider).languageCode,
                               style: Theme.of(
                                 context,
                               ).textTheme.headlineLarge?.copyWith(),
@@ -119,7 +130,9 @@ class BalanceView extends HookConsumerWidget {
                               (balanceForMonth.value?.expenses ?? 0.0)
                                   .formatCurrencySymbol,
                               style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(color: Colors.redAccent),
+                                  ?.copyWith(
+                                    color: FluentTheme.of(context).failureColor,
+                                  ),
                             ),
                           ],
                         ),
@@ -129,18 +142,19 @@ class BalanceView extends HookConsumerWidget {
                           spacing: 12,
                           children: [
                             Text(
-                              '❇️ Incomes',
+                              'Incomes',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(context).hintColor,
                                   ),
                             ),
                             Text(
-                              //TODO: animate text
                               (balanceForMonth.value?.incomes ?? 0.0)
                                   .formatCurrencySymbol,
                               style: Theme.of(context).textTheme.bodyLarge
-                                  ?.copyWith(color: Colors.greenAccent),
+                                  ?.copyWith(
+                                    color: FluentTheme.of(context).successColor,
+                                  ),
                             ),
                           ],
                         ),
@@ -157,7 +171,6 @@ class BalanceView extends HookConsumerWidget {
                                   ),
                             ),
                             Text(
-                              //TODO: animate text
                               (balanceForMonth.value?.savings ?? 0.0)
                                   .formatCurrencySymbol,
                               style: Theme.of(context).textTheme.bodyLarge,
@@ -174,19 +187,26 @@ class BalanceView extends HookConsumerWidget {
           Positioned(
             right: 0,
             top: 32,
-            child: Tooltip(
-              message: isDark
-                  ? 'Switch to light theme'
-                  : 'Switch to dark theme',
-              child: IconButton(
-                icon: Icon(
-                  isDark ? FluentIcons.sunny : FluentIcons.clear_night,
+            child: IconButton(
+              style: ButtonStyle(
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleGradientBorder(
+                    borderRadius: BorderRadius.circular(99),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: FluentTheme.of(context).gradientBorderColors,
+                    ),
+                    style: BorderStyle.solid,
+                  ),
                 ),
-                onPressed: () {
-                  ref.read(themeModeProvider.notifier).toggle();
-                  unawaited(HapticFeedback.lightImpact());
-                },
               ),
+              icon: Icon(
+                isDark ? LucideIcons.sun : LucideIcons.moon),
+              onPressed: () {
+                ref.read(themeModeProvider.notifier).toggle();
+                unawaited(HapticFeedback.lightImpact());
+              },
             ),
           ),
         ],

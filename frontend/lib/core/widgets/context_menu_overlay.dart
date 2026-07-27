@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:frontend/core/widgets/blurred_container.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 /// iOS-style context menu overlay: shows a list of items without selection state.
 /// Opens centered on the trigger widget and calls [onSelected] when an item is pressed.
@@ -31,6 +32,7 @@ class ContextMenuOverlay<T> extends HookWidget {
   Widget build(BuildContext context) {
     final isOpen = useState(false);
     final triggerKey = useRef(GlobalKey());
+    final selectedItem = useState<T?>(null);
 
     void openOverlay() {
       final box =
@@ -55,8 +57,10 @@ class ContextMenuOverlay<T> extends HookWidget {
           items: items,
           itemBuilder: itemBuilder,
           title: title,
+          selectedItem: selectedItem.value,
           onSelected: (item) {
             onSelected(item);
+            selectedItem.value = item;
             close();
           },
           onDismiss: close,
@@ -81,6 +85,7 @@ class _ContextMenuOverlayContent<T> extends StatefulWidget {
     required this.itemBuilder,
     required this.onSelected,
     required this.onDismiss,
+    this.selectedItem,
     this.title,
   });
 
@@ -90,6 +95,7 @@ class _ContextMenuOverlayContent<T> extends StatefulWidget {
   final String? title;
   final void Function(T item) onSelected;
   final VoidCallback onDismiss;
+  final T? selectedItem;
 
   @override
   State<_ContextMenuOverlayContent<T>> createState() =>
@@ -104,6 +110,7 @@ class _ContextMenuOverlayContentState<T>
 
   late final AnimationController _controller;
   late final Animation<double> _animation;
+
 
   @override
   void initState() {
@@ -251,11 +258,21 @@ class _ContextMenuOverlayContentState<T>
                                   horizontal: 16,
                                 ),
                                 minVerticalPadding: 0,
-                                onTap: () => widget.onSelected(item),
+                                onTap: () {
+                                  widget.onSelected(item);
+                                },
                                 title: FittedBox(
                                   alignment: Alignment.centerLeft,
                                   fit: BoxFit.scaleDown,
-                                  child: widget.itemBuilder(context, item),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    spacing: 8,
+                                    children: [
+                                      if (widget.selectedItem == item)
+                                        const Icon(LucideIcons.check, size: 16),
+                                      widget.itemBuilder(context, item),
+                                    ],
+                                  ),
                                 ),
                               );
                             },

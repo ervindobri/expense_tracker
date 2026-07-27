@@ -47,6 +47,7 @@ class Entry(models.Model):
     amount = models.FloatField(max_length=10)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     added_date = models.DateTimeField("date published")
+    notes = models.CharField(max_length=100,blank=True, default="")
 
 
 

@@ -1,3 +1,4 @@
+import 'package:frontend/features/tracker/domain/models/category.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 import 'package:frontend/features/tracker/presentation/state/categories_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/entries_provider.dart';

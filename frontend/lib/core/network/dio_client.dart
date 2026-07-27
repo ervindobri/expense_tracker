@@ -1,5 +1,7 @@
 // ignore_for_file: dead_null_aware_expression
 
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -19,5 +21,8 @@ String.fromEnvironment(
 
 @riverpod
 Dio dioClient(Ref ref) {
-  return Dio(BaseOptions(baseUrl: _apiBaseUrl));
+  final url = Platform.isIOS
+      ? 'https://expense-tracker.tail0b146d.ts.net/api/'
+      : _apiBaseUrl;
+  return Dio(BaseOptions(baseUrl: url));
 }

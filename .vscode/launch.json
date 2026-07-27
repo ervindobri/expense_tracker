@@ -15,9 +15,10 @@
             "cwd": "frontend",
             "request": "launch",
             "type": "dart",
+            "flutterMode": "debug",
             "args": [
                 "-d",
-                "web-server",
+                "chrome",
                 "--web-port",
                 "57657"
             ],

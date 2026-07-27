@@ -1,11 +1,13 @@
 import 'dart:async';
 
 import 'package:fluent_ui/fluent_ui.dart' hide Colors;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide IconButton, Tooltip, ButtonStyle;
 import 'package:flutter/services.dart';
 import 'package:frontend/core/app/app.dart';
 import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/string.dart';
+import 'package:frontend/core/network/dio_client.dart';
 import 'package:frontend/core/widgets/context_menu_overlay.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/report_notifier.dart';
@@ -209,6 +211,12 @@ class BalanceView extends HookConsumerWidget {
               },
             ),
           ),
+          if (kDebugMode)
+            Positioned(
+              left: 0,
+              top: 32,
+              child: Text(ref.read(dioClientProvider).options.baseUrl),
+            )
         ],
       ),
     );

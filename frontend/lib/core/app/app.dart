@@ -1,4 +1,5 @@
 import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'
     hide Tooltip, IconButton, ElevatedButton, TextButton;
 import 'package:frontend/core/app/theme.dart';
@@ -21,7 +22,8 @@ class App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
-    ref.watch(internetConnectionProvider);
+    if (!kIsWeb) {
+      ref.watch(internetConnectionProvider);
 
     ref.listen<InternetConnectionStatus>(internetConnectionProvider, (_, next) {
       if (next == InternetConnectionStatus.offline) {
@@ -42,6 +44,8 @@ class App extends ConsumerWidget {
         });
       }
     });
+    }
+
 
     return FluentApp(
       debugShowCheckedModeBanner: false,

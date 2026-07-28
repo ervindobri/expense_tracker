@@ -23,8 +23,8 @@ abstract final class AppTheme {
     brightness: Brightness.dark,
     accentColor: accent,
     visualDensity: VisualDensity.adaptivePlatformDensity,
-    scaffoldBackgroundColor: const Color(0xff0F0F0F),
-    cardColor: const Color(0xff000000),
+    scaffoldBackgroundColor: const Color(0xff000000),
+    cardColor: const Color(0xff0C0C0C),
     menuColor: const Color(0xff020202),
     dividerTheme: const DividerThemeData(
       thickness: 0.5,
@@ -59,9 +59,24 @@ extension FluentThemeDataExt on FluentThemeData {
       ? [Colors.white, Colors.transparent, Colors.white]
       : [Colors.black, Colors.transparent, Colors.black];
 
+  List<Color> get gradientBorderColors2 => brightness == Brightness.dark
+      ? [
+          Colors.white.withValues(alpha: 0.3),
+          Colors.white.withValues(alpha: 0.3),
+        ]
+      : [
+          Colors.black.withValues(alpha: 0.3),
+          Colors.black.withValues(alpha: 0.3),
+        ];
+
 
   Color get failureColor => const Color(0xffFd66466);
   Color get successColor => const Color(0xff00b050);
+
+
+  Color get indicatorColor => brightness == Brightness.dark
+      ? const Color(0xff3A3A3A)
+      : const Color(0xffE5E5E5);
 }
 
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(

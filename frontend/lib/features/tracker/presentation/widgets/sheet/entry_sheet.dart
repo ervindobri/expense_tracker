@@ -69,7 +69,8 @@ class EntrySheet extends HookConsumerWidget {
         AnimatedScale(
           scale: scale.value,
           alignment: Alignment.bottomCenter,
-          duration: Durations.short4,
+          duration: Durations.medium2,
+          curve: Curves.easeInOutBack,
           child: Container(
             decoration: BoxDecoration(
               color: FluentTheme.of(context).cardColor,

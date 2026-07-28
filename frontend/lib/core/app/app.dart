@@ -2,8 +2,11 @@ import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'
     hide Tooltip, IconButton, ElevatedButton, TextButton;
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/network/internet_connection_provider.dart';
+import 'package:frontend/core/widgets/animated_indexed_stack.dart';
+import 'package:frontend/core/widgets/liquid_tabbar.dart';
 import 'package:frontend/core/widgets/pass_through.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
@@ -12,6 +15,7 @@ import 'package:frontend/features/tracker/presentation/state/report_notifier.dar
 import 'package:frontend/features/tracker/presentation/widgets/balance_view.dart';
 import 'package:frontend/features/tracker/presentation/widgets/entries_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:toastification/toastification.dart';
 
 
@@ -74,16 +78,29 @@ class HomeShell extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final month = ref.watch(reportProvider);
     final balance = ref.watch(balanceProvider(month)).value;
+    final tab = useState(0);
     return Scaffold(
       backgroundColor: FluentTheme.of(context).scaffoldBackgroundColor,
       floatingActionButton: balance?.incomes == 0.0
           ? PrimaryButton(onPressed: () {}, label: 'Add income')
           : const SizedBox(),
-      body: Align(
-        alignment: Alignment.center,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 840),
-          child: Stack(
+      extendBody: true,
+      bottomNavigationBar: LiquidGlassTabBar(
+        indicatorColor: FluentTheme.of(context).indicatorColor,
+        items: const [
+          LiquidGlassTabItem(icon: LucideIcons.home, label: 'Home'),
+          LiquidGlassTabItem(icon: LucideIcons.chartLine, label: 'Stats'),
+          // ...
+        ],
+        currentIndex: tab.value,
+        onTap: (i) => tab.value = i,
+      ),
+      body: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 840),
+        child: AnimatedIndexedStack(
+          index: tab.value,
+          children: [
+            Stack(
             alignment: Alignment.topCenter,
             // spacing: 32,
             children: [
@@ -97,6 +114,32 @@ class HomeShell extends HookConsumerWidget {
               ), // Custom scroll view with sizedbox of height BalanceView
             ],
           ),
+            SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 12,
+                  children: [
+                    Text(
+                      'Stats & charts',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+
+                    Container(
+                      decoration: BoxDecoration(
+                        color: FluentTheme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(24.0),
+                      ),
+                      padding: const EdgeInsets.all(12.0),
+                      width: double.infinity,
+                      child: const SizedBox(height: 248),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

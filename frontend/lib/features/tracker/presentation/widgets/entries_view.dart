@@ -399,7 +399,6 @@ class EntriesView extends HookConsumerWidget {
                               selectedType.value == CategoryType.expense;
                           return Column(
                             children: <Widget>[
-                              if (week.value < 6)
                                 Column(
                                   children: [
                                     ListTile(

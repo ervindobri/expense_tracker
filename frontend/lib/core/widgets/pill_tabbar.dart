@@ -12,11 +12,13 @@ class ExpenseIncomeTabBar<T> extends StatefulWidget {
     this.initialTab,
     required this.itemToString,
     required this.items,
+    this.backgroundColor,
   });
   final T? initialTab;
   final ValueChanged<T> onChanged;
   final String Function(T val) itemToString;
   final List<T> items;
+  final Color? backgroundColor;
 
   @override
   State<ExpenseIncomeTabBar> createState() => _ExpenseIncomeTabBarState<T>();
@@ -50,7 +52,9 @@ class _ExpenseIncomeTabBarState<T> extends State<ExpenseIncomeTabBar<T>> {
     return Container(
       width: 248,
       decoration: BoxDecoration(
-      color: FluentTheme.of(context).scaffoldBackgroundColor,
+        color:
+            widget.backgroundColor ??
+            FluentTheme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(32.0)
       ),
       padding: const EdgeInsets.all(4),

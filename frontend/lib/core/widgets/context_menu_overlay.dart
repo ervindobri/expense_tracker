@@ -20,6 +20,7 @@ class ContextMenuOverlay<T> extends HookWidget {
     required this.onSelected,
     required this.child,
     this.title,
+    this.width,
   });
 
   final List<T> items;
@@ -27,6 +28,7 @@ class ContextMenuOverlay<T> extends HookWidget {
   final void Function(T item) onSelected;
   final Widget child;
   final String? title;
+  final double? width;
 
   @override
   Widget build(BuildContext context) {
@@ -58,6 +60,7 @@ class ContextMenuOverlay<T> extends HookWidget {
           itemBuilder: itemBuilder,
           title: title,
           selectedItem: selectedItem.value,
+          width: width,
           onSelected: (item) {
             onSelected(item);
             selectedItem.value = item;
@@ -87,6 +90,7 @@ class _ContextMenuOverlayContent<T> extends StatefulWidget {
     required this.onDismiss,
     this.selectedItem,
     this.title,
+    this.width,
   });
 
   final Rect triggerRect;
@@ -96,6 +100,7 @@ class _ContextMenuOverlayContent<T> extends StatefulWidget {
   final void Function(T item) onSelected;
   final VoidCallback onDismiss;
   final T? selectedItem;
+  final double? width;
 
   @override
   State<_ContextMenuOverlayContent<T>> createState() =>
@@ -129,7 +134,7 @@ class _ContextMenuOverlayContentState<T>
   @override
   Widget build(BuildContext context) {
     final screen = MediaQuery.sizeOf(context);
-    final panelMaxWidth = kIsWeb ? 248.0 : screen.width * 0.6;
+    final panelMaxWidth = widget.width ?? (kIsWeb ? 248.0 : screen.width * 0.6);
     const itemHeight = 48.0;
     final itemCount = widget.items.length;
     final hasTitle = widget.title != null && widget.title!.isNotEmpty;

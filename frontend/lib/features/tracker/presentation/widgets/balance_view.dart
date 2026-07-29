@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:fluent_ui/fluent_ui.dart' hide Colors;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide IconButton, Tooltip, ButtonStyle;
@@ -7,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:frontend/core/app/app.dart';
 import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/string.dart';
+import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/network/dio_client.dart';
 import 'package:frontend/core/widgets/context_menu_overlay.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
@@ -45,11 +47,11 @@ class BalanceView extends HookConsumerWidget {
               Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: ContextMenuOverlay<int>(
-                  title: 'Select month',
+                  title: LocaleKeys.select_month.tr(),
                   itemBuilder: (BuildContext context, int item) =>
                       Text(
                     item + 1 == currentMonth
-                        ? 'This month'
+                        ? LocaleKeys.this_month.tr()
                         : (item + 1).toMonthLabel,
                   ),
                   onSelected: (item) {
@@ -63,7 +65,7 @@ class BalanceView extends HookConsumerWidget {
                     children: [
                       Text(
                         month == currentMonth
-                            ? 'This month'
+                            ? LocaleKeys.this_month.tr()
                             : month.toMonthLabel,
                       ),
                       const Icon(LucideIcons.chevronDown, size: 12),
@@ -80,7 +82,7 @@ class BalanceView extends HookConsumerWidget {
                     spacing: 12,
                     children: [
                       Text(
-                        'TOTAL BALANCE',
+                        LocaleKeys.total_balance.tr(),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).hintColor,
                           fontWeight: FontWeight.w200,
@@ -95,14 +97,13 @@ class BalanceView extends HookConsumerWidget {
                             NumberFlow(
                               value: balanceForMonth.value?.totalAmount ?? 0.0,
                               motionBlur: 4.0,
-                              locale: ref.read(localeProvider).languageCode,
+                              locale: context.locale.languageCode,
                               style: Theme.of(
                                 context,
                               ).textTheme.headlineLarge?.copyWith(),
-                              // format: NumberFlowFormat.currency(currencyCode: currencyCode),
                             ),
                             Text(
-                              'Ft',
+                              LocaleKeys.ft.tr(),
                               style: Theme.of(context).textTheme.headlineLarge,
                             ),
                           ],
@@ -121,16 +122,15 @@ class BalanceView extends HookConsumerWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              '🔺 Expenses',
+                              '🔺 ${LocaleKeys.expenses.tr()}',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(context).hintColor,
                                   ),
                             ),
                             Text(
-                              //TODO: animate text
                               (balanceForMonth.value?.expenses ?? 0.0)
-                                  .formatCurrencySymbol,
+                                  .formatCurrencySymbol(),
                               style: Theme.of(context).textTheme.bodyLarge
                                   ?.copyWith(
                                     color: FluentTheme.of(context).failureColor,
@@ -144,7 +144,7 @@ class BalanceView extends HookConsumerWidget {
                           spacing: 12,
                           children: [
                             Text(
-                              'Incomes',
+                              LocaleKeys.incomes.tr(),
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(context).hintColor,
@@ -152,7 +152,7 @@ class BalanceView extends HookConsumerWidget {
                             ),
                             Text(
                               (balanceForMonth.value?.incomes ?? 0.0)
-                                  .formatCurrencySymbol,
+                                  .formatCurrencySymbol(),
                               style: Theme.of(context).textTheme.bodyLarge
                                   ?.copyWith(
                                     color: FluentTheme.of(context).successColor,
@@ -166,7 +166,7 @@ class BalanceView extends HookConsumerWidget {
                           spacing: 12,
                           children: [
                             Text(
-                              'Savings',
+                              LocaleKeys.savings.tr(),
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: Theme.of(context).hintColor,
@@ -174,7 +174,7 @@ class BalanceView extends HookConsumerWidget {
                             ),
                             Text(
                               (balanceForMonth.value?.savings ?? 0.0)
-                                  .formatCurrencySymbol,
+                                  .formatCurrencySymbol(),
                               style: Theme.of(context).textTheme.bodyLarge,
                             ),
                           ],

@@ -28,27 +28,25 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
-  flutter:
-    sdk: flutter
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  animations: ^2.2.0
+  connectivity_plus: ^6.1.0
   cupertino_icons: ^1.0.8
   dio: ^5.1.0
-  flutter_hooks: ^0.21.3+1
+  easy_localization: ^3.0.8
+  fl_chart: ^1.2.0
   fluent_ui: 4.15.0
+  flutter:
+    sdk: flutter
+  flutter_hooks: ^0.21.3+1
   flutter_riverpod: ^3.0.2
+  gradient_borders: ^1.0.4
   hooks_riverpod: ^3.0.2
-  intl:
+  intl: ^0.20.2
+  lucide_icons_flutter: ^3.1.15
   number_flow_flutter: ^0.1.0
   riverpod: ^3.0.2
   riverpod_annotation: ^3.0.2
   toastification: ^3.2.0
-  animations: ^2.2.0
-  lucide_icons_flutter: ^3.1.15
-  gradient_borders: ^1.0.4
-  connectivity_plus: ^6.1.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -62,6 +60,8 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/translations/
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

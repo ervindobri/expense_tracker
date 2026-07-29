@@ -1,11 +1,11 @@
 import 'dart:async';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:fluent_ui/fluent_ui.dart' show FluentTheme;
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:frontend/core/app/app.dart';
 import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/build_context.dart';
 import 'package:frontend/core/extensions/date_time.dart';
@@ -103,7 +103,7 @@ class EntrySheet extends HookConsumerWidget {
                       spacing: 8,
                       children: [
                         Text(
-                          '📌 ${week == 6 ? 'Total' : 'Week $week'} >',
+                          '📌 ${week == 6 ? 'total'.tr() : 'week'.tr(namedArgs: {'value': '$week'})} >',
                           style: theme.bodySmall?.copyWith(height: 1.5),
                         ),
                         Text(
@@ -189,7 +189,9 @@ class EditEntryView extends HookWidget {
                       children: [
                         const Icon(LucideIcons.dollarSign),
                         Text(
-                          lastEditedEntry.value!.amount.formatCurrencySymbol,
+                          lastEditedEntry.value!.amount.formatCurrencySymbol(
+                            showDecimals: true,
+                          ),
                         ),
                       ],
                     ),
@@ -213,7 +215,7 @@ class EditEntryView extends HookWidget {
             border: FluentTheme.of(context).inputBorder(focused: false),
             enabledBorder: FluentTheme.of(context).inputBorder(focused: false),
             isDense: true,
-            hintText: 'Type notes here...',
+            hintText: 'type_notes_here'.tr(),
             contentPadding: const EdgeInsets.symmetric(
               vertical: 4.0,
               horizontal: 12.0,
@@ -248,7 +250,9 @@ class EditEntryView extends HookWidget {
                         }
                         toastification.show(
                           title: Text(
-                            'Error while updating entry: ${e.toString()}',
+                            'error_updating_entry'.tr(
+                              namedArgs: {'error': e.toString()},
+                            ),
                           ),
                           type: ToastificationType.error,
                         );
@@ -256,7 +260,7 @@ class EditEntryView extends HookWidget {
                     },
                     padding: const EdgeInsets.all(12.0),
                     icon: LucideIcons.checkCircle,
-                    label: 'Save changes',
+                    label: 'save_changes'.tr(),
                   );
                 },
               ),
@@ -270,7 +274,7 @@ class EditEntryView extends HookWidget {
                 padding: const EdgeInsets.all(12.0),
                 icon: LucideIcons.arrowLeft,
                 outline: false,
-                label: 'Back',
+                label: 'back'.tr(),
               ),
             ),
           ],
@@ -363,7 +367,7 @@ class EntryTotalView extends HookConsumerWidget {
                   const Icon(LucideIcons.info),
                   Flexible(
                     child: Text(
-                      'There are no entries added to this category yet.\nAdd expenses/incomes to show entries.',
+                      'no_entries_message'.tr(),
                       style: theme.bodySmall,
                     ),
                   ),
@@ -374,7 +378,7 @@ class EntryTotalView extends HookConsumerWidget {
               spacing: 8,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('edit manually', style: theme.bodySmall.light),
+                Text('edit_manually'.tr(), style: theme.bodySmall.light),
                 FilterChipList(
                   initialList: stateEntries.value,
                   onPressed: (e) {
@@ -415,7 +419,7 @@ class EntryTotalView extends HookConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Total', style: theme.headlineMedium),
+            Text('total'.tr(), style: theme.headlineMedium),
             Row(
               spacing: 8,
               children: [
@@ -429,14 +433,14 @@ class EntryTotalView extends HookConsumerWidget {
                             ? '-'
                             : '+'
                       : null,
-                  locale: ref.read(localeProvider).languageCode,
+                  locale: context.locale.languageCode,
                   format: const NumberFlowFormat.currency(
                     maxFraction: 2,
                     sign: SignDisplay.negative,
                     currencyCode: '',
                   ),
                 ),
-                Text('Ft', style: theme.headlineMedium),
+                Text('ft'.tr(), style: theme.headlineMedium),
               ],
             ),
           ],
@@ -487,19 +491,20 @@ class EntryTotalView extends HookConsumerWidget {
               onPressed: () => submitEntry(),
               icon: LucideIcons.circlePlus,
               padding: const EdgeInsets.symmetric(vertical: 16.0),
-              label:
-                  "Add ${category.type == CategoryType.expense ? 'expense' : 'income'}",
+              label: category.type == CategoryType.expense
+                  ? 'add_expense'.tr()
+                  : 'add_income_action'.tr(),
             ),
           ),
         if (week > currentWeek && !addDisabled)
-          const Center(
+          Center(
             child: Row(
               spacing: 12,
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(LucideIcons.info),
-                Text('You are editing a future week.'),
+                const Icon(LucideIcons.info),
+                Text('future_week_notice'.tr()),
               ],
             ),
           ),

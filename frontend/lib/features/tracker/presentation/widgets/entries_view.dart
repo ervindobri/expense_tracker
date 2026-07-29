@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:fluent_ui/fluent_ui.dart' show FluentTheme;
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/date_time.dart';
 import 'package:frontend/core/extensions/string.dart';
 import 'package:frontend/core/extensions/text_style.dart';
+import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/widgets/context_menu_overlay.dart';
 import 'package:frontend/core/widgets/pill_tabbar.dart';
 import 'package:frontend/core/widgets/snap_scroll_physics.dart';
@@ -35,7 +37,7 @@ class EntriesView extends HookConsumerWidget {
     final month = ref.watch(reportProvider);
     final AsyncValue<List<Category>> categories = ref.watch(categoriesProvider);
     final DateTime now = DateTime.now();
-    final entries = ref.watch(monthlyEntriesProvider);
+    final entries = ref.watch(currentMonthlyEntriesProvider);
 
     final DateTime firstDayOfMonth = now.copyWith(
       month: month,
@@ -69,11 +71,11 @@ class EntriesView extends HookConsumerWidget {
         scrolled.value = parentController.offset.abs();
         offset.value = scrolled.value / (balanceHeight / 2);
         passthroughNotifier.set(offset.value < 0.5);
-        unawaited(HapticFeedback.lightImpact());
 
-        if (kDebugMode) {
-          print(offset.value);
+        if (scrolled.value % 5 == 0) {
+          unawaited(HapticFeedback.lightImpact());
         }
+
       }
 
       parentController.addListener(listener);
@@ -81,7 +83,6 @@ class EntriesView extends HookConsumerWidget {
     });
 
     final TextTheme theme = Theme.of(context).textTheme;
-
     return ClipRRect(
       child: BackdropFilter(
         filterConfig: ImageFilterConfig.blur(
@@ -115,101 +116,117 @@ class EntriesView extends HookConsumerWidget {
                 ),
               ),
               PinnedHeaderSliver(
-                child: Padding(
-                  padding: EdgeInsetsGeometry.only(
-                    top: lerpDouble(
-                      0,
-                      MediaQuery.viewPaddingOf(context).top,
-                      (offset.value / 2).clamp(0.0, 1.0),
-                    )!,
+                child: AnimatedContainer(
+                  duration: Durations.short3,
+                  decoration: BoxDecoration(
+                    color: offset.value < 1.5
+                        ? Colors.transparent
+                        : FluentTheme.of(context).cardColor,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(36.0),
+                    ),
                   ),
-                  child: AnimatedCrossFade(
-                    firstChild: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24.0,
-                        vertical: 12.0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          Text('📆 History', style: theme.bodyLarge.bold),
-                          TextButton(
-                            style: TextButton.styleFrom(
-                              foregroundColor: FluentTheme.of(
-                                context,
-                              ).textColor,
-                              padding: const EdgeInsets.all(4),
-                              backgroundColor: Colors.transparent,
-                              textStyle: theme.bodySmall?.copyWith(
-                                color: FluentTheme.of(context).textColor,
-                              ),
-                            ),
-                            onPressed: () {
-                              week.value = currentWeek;
-                              isTotal.value = false;
-                              unawaited(HapticFeedback.selectionClick());
-                            },
-                            child: const Text('Now'),
-                          ),
-                        ],
-                      ),
+                  child: Padding(
+                    padding: EdgeInsetsGeometry.only(
+                      top: lerpDouble(
+                        0,
+                        MediaQuery.viewPaddingOf(context).top,
+                        (offset.value / 2).clamp(0.0, 1.0),
+                      )!,
                     ),
-                    secondChild: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text('📆 History', style: theme.bodyLarge.bold),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: ContextMenuOverlay<int>(
-                              title: 'Select month',
-                              itemBuilder: (BuildContext context, int item) =>
-                                  Text(
-                                    item + 1 == currentMonth
-                                        ? 'This month'
-                                        : (item + 1).toMonthLabel,
-                                  ),
-                              onSelected: (item) {
-                                ref.read(reportProvider.notifier).set(item + 1);
-                                if (month != item + 1) {
-                                  // set week to Total
-                                  week.value = 6;
-                                  isTotal.value = true;
-                                  scrollController.animateTo(
-                                    scrollController.position.maxScrollExtent,
-                                    duration: Durations.short2,
-                                    curve: Curves.bounceInOut,
-                                  );
-                                }
-                                unawaited(HapticFeedback.mediumImpact());
+                    child: AnimatedCrossFade(
+                      firstChild: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0,
+                          vertical: 12.0,
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: <Widget>[
+                            Text('history'.tr(), style: theme.bodyLarge.bold),
+                            TextButton(
+                              style: TextButton.styleFrom(
+                                foregroundColor: FluentTheme.of(
+                                  context,
+                                ).textColor,
+                                padding: const EdgeInsets.all(4),
+                                backgroundColor: Colors.transparent,
+                                textStyle: theme.bodySmall?.copyWith(
+                                  color: FluentTheme.of(context).textColor,
+                                ),
+                              ),
+                              onPressed: () {
+                                week.value = currentWeek;
+                                isTotal.value = false;
+                                unawaited(HapticFeedback.selectionClick());
                               },
-                              items: List.generate(
-                                12,
-                                growable: false,
-                                (i) => i,
-                              ),
-                              child: Row(
-                                spacing: 8,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    month == currentMonth
-                                        ? 'This month'
-                                        : month.toMonthLabel,
-                                  ),
-                                  const Icon(LucideIcons.chevronDown, size: 12),
-                                ],
+                              child: const Text(LocaleKeys.nowLabel).tr(),
+                            ),
+                          ],
+                        ),
+                      ),
+                      secondChild: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('history'.tr(), style: theme.bodyLarge.bold),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: ContextMenuOverlay<int>(
+                                title: LocaleKeys.selectMonthLabel.tr(),
+                                itemBuilder: (BuildContext context, int item) =>
+                                    Text(
+                                      item + 1 == currentMonth
+                                          ? 'this_month'.tr()
+                                          : (item + 1).toMonthLabel,
+                                    ),
+                                onSelected: (item) {
+                                  ref
+                                      .read(reportProvider.notifier)
+                                      .set(item + 1);
+                                  if (month != item + 1) {
+                                    // set week to Total
+                                    week.value = 6;
+                                    isTotal.value = true;
+                                    scrollController.animateTo(
+                                      scrollController.position.maxScrollExtent,
+                                      duration: Durations.short2,
+                                      curve: Curves.bounceInOut,
+                                    );
+                                  }
+                                  unawaited(HapticFeedback.mediumImpact());
+                                },
+                                items: List.generate(
+                                  12,
+                                  growable: false,
+                                  (i) => i,
+                                ),
+                                child: Row(
+                                  spacing: 8,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      month == currentMonth
+                                          ? 'this_month'.tr()
+                                          : month.toMonthLabel,
+                                    ),
+                                    const Icon(
+                                      LucideIcons.chevronDown,
+                                      size: 12,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      crossFadeState: offset.value >= 1.5
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: Durations.short3,
                     ),
-                    crossFadeState: offset.value >= 1.5
-                        ? CrossFadeState.showSecond
-                        : CrossFadeState.showFirst,
-                    duration: Durations.short3,
                   ),
                 ),
               ),
@@ -290,8 +307,12 @@ class EntriesView extends HookConsumerWidget {
                                               ? '*'
                                               : '') +
                                           (index == 5
-                                              ? 'Total'
-                                              : 'Week ${index + 1}'),
+                                              ? 'total'.tr()
+                                              : 'week'.tr(
+                                                  namedArgs: {
+                                                    'value': '${index + 1}',
+                                                  },
+                                                )),
                                       style: Theme.of(context)
                                           .textTheme
                                           .bodyLarge
@@ -332,7 +353,10 @@ class EntriesView extends HookConsumerWidget {
                       ExpenseIncomeTabBar<CategoryType>(
                         items: CategoryType.values,
                         initialTab: selectedType.value,
-                        itemToString: (CategoryType val) => val.displayName,
+                        itemToString: (CategoryType val) =>
+                            val == CategoryType.expense
+                            ? LocaleKeys.expenses.tr()
+                            : LocaleKeys.incomes.tr(),
                         onChanged: (CategoryType val) {
                           selectedType.value = val;
                         },
@@ -343,13 +367,13 @@ class EntriesView extends HookConsumerWidget {
                             context,
                           ).textTheme.bodySmall!.color?.withAlpha(128),
                         ),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 16.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: <Widget>[
-                              Text('Category'),
-                              Text('Total (Ft)'),
+                              const Text(LocaleKeys.categoryLabel).tr(),
+                              const Text(LocaleKeys.totalFtLabel).tr(),
                             ],
                           ),
                         ),
@@ -412,7 +436,7 @@ class EntriesView extends HookConsumerWidget {
                                             MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            'Total',
+                                          'total'.tr(),
                                             style: theme.bodyMedium.bold,
                                           ),
                                           Text(
@@ -541,8 +565,8 @@ class EntriesView extends HookConsumerWidget {
                                                           : isExpense
                                                           ? '-'
                                                           : '+',
-                                                      locale: ref
-                                                          .read(localeProvider)
+                                                      locale: context
+                                                          .locale
                                                           .languageCode,
 
                                                       format:
@@ -571,6 +595,9 @@ class EntriesView extends HookConsumerWidget {
                   ),
                 ),
               ),
+              const SliverToBoxAdapter(
+                child: SizedBox(height: kToolbarHeight + 48.0),
+              )
             ],
           ),
         ),

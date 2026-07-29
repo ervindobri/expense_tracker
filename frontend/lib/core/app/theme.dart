@@ -77,6 +77,10 @@ extension FluentThemeDataExt on FluentThemeData {
   Color get indicatorColor => brightness == Brightness.dark
       ? const Color(0xff3A3A3A)
       : const Color(0xffE5E5E5);
+
+  Color get containerColor => brightness == Brightness.dark
+      ? const Color(0xff1A1A1A)
+      : const Color(0xffF5F5F5);
 }
 
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
@@ -90,7 +94,7 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
     return switch (Uri.base.queryParameters['theme']) {
       'light' => ThemeMode.light,
       'dark' => ThemeMode.dark,
-      _ => ThemeMode.system,
+      _ => ThemeMode.dark,
     };
   }
 

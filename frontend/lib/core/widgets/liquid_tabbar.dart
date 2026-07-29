@@ -124,6 +124,7 @@ class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
                           // dragging
                           final snapToIndex = (xPosition ~/ (itemWidth / 2))
                               .clamp(0, widget.items.length - 1);
+                          widget.onTap(snapToIndex);
                           setState(() {
                             xPosition = itemWidth * snapToIndex;
                             selectedIndex = snapToIndex;
@@ -133,6 +134,7 @@ class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
                             xPosition = 0.0;
                             selectedIndex = 0;
                           });
+                          
                         }
                       }
 

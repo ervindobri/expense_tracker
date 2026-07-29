@@ -1,0 +1,37 @@
+class LocaleKeys {
+  static const home = 'home';
+  static const stats = 'stats';
+  static const add_income = 'add_income';
+  static const no_internet_connection = 'no_internet_connection';
+  static const please_check_connection = 'please_check_connection';
+  static const stats_and_charts = 'stats_and_charts';
+  static const history = 'history';
+  static const now = 'now';
+  static const select_month = 'select_month';
+  static const this_month = 'this_month';
+  static const category = 'category';
+  static const total_ft = 'total_ft';
+  static const total = 'total';
+  static const week = 'week';
+  static const expenses = 'expenses';
+  static const incomes = 'incomes';
+  static const savings = 'savings';
+  static const total_balance = 'total_balance';
+  static const ft = 'ft';
+  static const type_notes_here = 'type_notes_here';
+  static const save_changes = 'save_changes';
+  static const back = 'back';
+  static const edit_manually = 'edit_manually';
+  static const error_updating_entry = 'error_updating_entry';
+  static const no_entries_message = 'no_entries_message';
+  static const future_week_notice = 'future_week_notice';
+  static const add_expense = 'add_expense';
+  static const add_income_action = 'add_income_action';
+  static const String historyLabel = 'history';
+  static const String nowLabel = 'now';
+  static const String selectMonthLabel = 'select_month';
+  static const String hisMonthLabel = 'this_month';
+  static const String categoryLabel = 'category';
+  static const String totalFtLabel = 'total_ft';
+  static const String totalLabel = 'total';
+}

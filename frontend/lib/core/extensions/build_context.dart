@@ -6,4 +6,13 @@ extension BuildContextExt on BuildContext {
   double get height => MediaQuery.sizeOf(this).height;
 
   double get bottomPadding => MediaQuery.of(this).viewInsets.bottom;
+
+  ThemeData get theme => Theme.of(this);
+}
+
+extension ThemeExt on BuildContext {
+  TextStyle? get headlineSmall => theme.textTheme.headlineMedium;
+  TextStyle? get bodyLarge => theme.textTheme.bodyLarge;
+  TextStyle? get bodyMedium => theme.textTheme.bodyMedium;
+  TextStyle? get bodySmall => theme.textTheme.bodySmall;
 }

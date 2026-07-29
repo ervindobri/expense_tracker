@@ -1,3 +1,6 @@
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
 
 enum CategoryType { expense, income }
 
@@ -27,4 +30,30 @@ class Category {
   final CategoryType type;
 
   bool get isExpense => type == CategoryType.expense;
+}
+
+
+extension CategoryExt on Category {
+  Color get color => switch (id) {
+    1 => Colors.orange,
+    2 => Colors.yellow,
+    3 => Colors.deepPurple,
+    4 => Colors.green,
+    5 => Colors.purple,
+    6 => Colors.blue,
+    7 => Colors.deepOrange,
+    8 => Colors.lightBlue,
+    9 => Colors.lightGreen,
+    10 => Colors.pink,
+    11 => Colors.amber,
+    12 => Colors.blueGrey,
+    13 => Colors.cyan,
+    14 => Colors.teal,
+    15 => Colors.greenAccent, //Salary
+    16 => Colors.lightGreen, // others
+    17 => Colors.lightGreen, //others
+    18 => Colors.green,
+    19 => Colors.green,
+    _ => Colors.white,
+  };
 }

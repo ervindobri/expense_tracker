@@ -20,8 +20,26 @@ extension DoubleExt on double {
     return CurrencyFormatter.format(this, alwaysShowDecimals: true);
   }
 
+  String formatCurrencySymbol({bool showDecimals = false}) {
+    return CurrencyFormatter.format(
+      this,
+      alwaysShowDecimals: showDecimals,
+      showSymbol: true,
+    );
+  }
+}
+
+extension NumExt on num {
+  String get formatCurrency {
+    return CurrencyFormatter.format(this, alwaysShowDecimals: true);
+  }
+
   String get formatCurrencySymbol {
-    return CurrencyFormatter.format(this, showSymbol: true);
+    return CurrencyFormatter.format(
+      this,
+      alwaysShowDecimals: true,
+      showSymbol: true,
+    );
   }
 }
 
@@ -41,6 +59,22 @@ extension IntExt on int {
     11 => 'November',
     12 => 'December',
     _ => toString(),
+  };
+
+  String get toMonthLabelShort => switch (this) {
+    1 => 'J',
+    2 => 'F',
+    3 => 'M',
+    4 => 'A',
+    5 => 'M',
+    6 => 'J',
+    7 => 'J',
+    8 => 'A',
+    9 => 'S',
+    10 => 'O',
+    11 => 'N',
+    12 => 'D',
+    _ => toString().substring(0, 1),
   };
 
     (int first, int last) get weekLimits {

@@ -46,6 +46,7 @@ class BarChartView extends HookConsumerWidget {
     final height = useState(maxHeight);
     useEffect((){
       void listener(){
+        // TODO: scrolling is too fast until the height is 0, slow down shrinking
         scrolledArea.value = scrollController!.offset / maxHeight;
         height.value = (maxHeight * (1 - scrolledArea.value)).clamp(0.0, maxHeight);
       }

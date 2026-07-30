@@ -1,8 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
-import 'package:fluent_ui/fluent_ui.dart' show FluentTheme;
 import 'package:flutter/material.dart';
-import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/build_context.dart';
+import 'package:frontend/core/extensions/string.dart';
 
 /// One slice of the donut (e.g. a spending category).
 class ExpenseSegment<T> {
@@ -137,7 +136,6 @@ class _ExpenseDonutChartState extends State<ExpenseDonutChart> {
     return List.generate(widget.segments.length, (i) {
       final segment = widget.segments[i];
       final isTouched = i == _touchedIndex;
-      final percent = _total == 0 ? 0.0 : (segment.amount / _total) * 100;
 
       return PieChartSectionData(
         value: segment.amount <= 0 ? 0.001 : segment.amount,
@@ -145,13 +143,6 @@ class _ExpenseDonutChartState extends State<ExpenseDonutChart> {
         radius: isTouched ? 48 : 40,
         cornerRadius: 8.0,
         showTitle: false,
-        badgeWidget: isTouched
-            ? _PercentBadge(
-                label: segment.label,
-                percent: percent,
-                color: segment.color,
-              )
-            : null,
         // Pushes the badge outward past the ring, roughly where a
         // finger/cursor would sit over the slice.
         badgePositionPercentageOffset: 1.35,
@@ -160,45 +151,70 @@ class _ExpenseDonutChartState extends State<ExpenseDonutChart> {
   }
 
   Widget _buildCenterText() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      spacing: 4,
-      children: [
-        Text(widget.centerLabel, style: context.bodyLarge),
-        Text(widget.totalFormatter(_total), style: context.headlineSmall),
-      ],
-    );
-  }
-}
-
-class _PercentBadge extends StatelessWidget {
-  const _PercentBadge({required this.percent, this.color, required this.label});
-  final double percent;
-  final String label;
-  final Color? color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color:
-            color?.withValues(alpha: 0.3) ??
-            FluentTheme.of(context).indicatorColor,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: const [
-          BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
-        ],
-      ),
-      child: Row(
-        spacing: 4,
+    return AnimatedSwitcher(
+      duration: Durations.short3,
+      transitionBuilder: (child, anim) {
+        return SlideTransition(
+          position: anim.drive(
+            Tween(begin: const Offset(0, -0.1), end: Offset.zero),
+          ),
+          child: FadeTransition(opacity: anim, child: child),
+        );
+      },
+      child: Column(
+        key: ValueKey(_touchedIndex == null || _touchedIndex == -1),
         mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
+        spacing: 4,
         children: [
-          Text(label),
-          Text('${percent.toStringAsFixed(0)}%', style: context.bodySmall),
+          if (_touchedIndex == null || _touchedIndex == -1) ...[
+            Text(widget.centerLabel, style: context.bodyLarge),
+            Text(widget.totalFormatter(_total), style: context.headlineSmall),
+          ] else ...[
+            Text(
+              widget.segments[_touchedIndex!].label,
+              style: context.bodyLarge,
+            ),
+            Text(
+              widget.segments[_touchedIndex!].amount.formatCurrencySymbol(),
+              style: context.headlineSmall?.copyWith(
+                color: widget.segments[_touchedIndex!].color,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
+
+// class _PercentBadge extends StatelessWidget {
+//   const _PercentBadge({required this.percent, this.color, required this.label});
+//   final double percent;
+//   final String label;
+//   final Color? color;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+//       decoration: BoxDecoration(
+//         color:
+//             color?.withValues(alpha: 0.3) ??
+//             FluentTheme.of(context).indicatorColor,
+//         borderRadius: BorderRadius.circular(24),
+//         boxShadow: const [
+//           BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+//         ],
+//       ),
+//       child: Row(
+//         spacing: 4,
+//         mainAxisSize: MainAxisSize.min,
+//         mainAxisAlignment: MainAxisAlignment.center,
+//         children: [
+//           Text(label),
+//           Text('${percent.toStringAsFixed(0)}%', style: context.bodySmall),
+//         ],
+//       ),
+//     );
+//   }
+// }

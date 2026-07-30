@@ -26,7 +26,7 @@ class BarChartView extends HookConsumerWidget {
   });
 
   final CategoryType type;
-  final ValueNotifier<int> selectedMonth;
+  final ValueNotifier<int?> selectedMonth;
   final ScrollController? scrollController; 
 
   @override
@@ -35,9 +35,13 @@ class BarChartView extends HookConsumerWidget {
     final allEntries =
         ref.watch(monthlyEntriesProvider).value ?? const <int, List<Entry>>{};
     const maxHeight = 128.0;
+    // No month selected, show total
+    final entriesGrouped = selectedMonth.value == null
+        ? allEntries.entries.expand((e) => e.value).toList()
+        : allEntries[selectedMonth.value];
     final selectedAmount = ref.watch(
       amountForTypeProvider((
-        entries: allEntries[selectedMonth.value] ?? [],
+        entries: entriesGrouped ?? [],
         type: type,
       )),
     );
@@ -47,7 +51,7 @@ class BarChartView extends HookConsumerWidget {
     useEffect((){
       void listener(){
         // TODO: scrolling is too fast until the height is 0, slow down shrinking
-        scrolledArea.value = scrollController!.offset / maxHeight;
+        scrolledArea.value = (scrollController!.offset / maxHeight) / 2;
         height.value = (maxHeight * (1 - scrolledArea.value)).clamp(0.0, maxHeight);
       }
       scrollController?.addListener(listener);
@@ -134,7 +138,11 @@ class BarChartView extends HookConsumerWidget {
                             : totalOfMonth / max;
                         return GestureDetector(
                           onTap: () {
-                            selectedMonth.value = month;
+                            if (selectedMonth.value == month) {
+                              selectedMonth.value = null;
+                            } else {
+                              selectedMonth.value = month;
+                            }
                             unawaited(HapticFeedback.lightImpact());
                           },
                           child: AnimatedContainer(
@@ -143,7 +151,11 @@ class BarChartView extends HookConsumerWidget {
                             width: 20,
                             decoration: BoxDecoration(
                               color: FluentTheme.of(context).textColor.withValues(
-                                alpha: selectedMonth.value == month ? 1.0 : 0.5,
+                                    alpha: selectedMonth.value == month
+                                        ? 1.0
+                                        : selectedMonth.value == null
+                                        ? 1.0
+                                        : 0.5,
                               ),
                               borderRadius: BorderRadius.circular(4.0),
                             ),
@@ -158,28 +170,33 @@ class BarChartView extends HookConsumerWidget {
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              spacing: 4,
               children: [
                 ...List.generate(12, (i) {
                   final month = i + 1;
                   final isSelected = selectedMonth.value == month;
-                  return GestureDetector(
-                    onTap: () {
-                      selectedMonth.value = month;
-                      unawaited(HapticFeedback.lightImpact());
-                    },
-                    child: AnimatedScale(
-                      scale: isSelected ? 1.25 : 0.95,
-                      duration: Durations.short3,
-                      child: Container(
-                        height: 24,
-                        width: 20,
-                        alignment: Alignment.center,
-                        child: Text(
-                          month.toMonthLabelShort,
-                          style: selectedMonth.value == month
-                              ? context.bodySmall?.bold
-                              : context.bodySmall,
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        if (selectedMonth.value == month) {
+                          selectedMonth.value = null;
+                        } else {
+                          selectedMonth.value = month;
+                        }
+                        unawaited(HapticFeedback.lightImpact());
+                      },
+                      child: AnimatedScale(
+                        scale: isSelected ? 1.25 : 0.95,
+                        duration: Durations.short3,
+                        child: Container(
+                          width: 24,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.all(4.0),
+                          child: Text(
+                            month.toMonthLabelShort,
+                            style: selectedMonth.value == month
+                                ? context.bodySmall?.bold
+                                : context.bodySmall,
+                          ),
                         ),
                       ),
                     ),

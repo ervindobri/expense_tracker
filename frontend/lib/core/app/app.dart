@@ -99,7 +99,10 @@ class HomeShell extends HookConsumerWidget {
             icon: LucideIcons.chartLine,
             label: LocaleKeys.stats.tr(),
           ),
-          // ...
+          LiquidGlassTabItem(
+            icon: LucideIcons.settings,
+            label: LocaleKeys.settings.tr(),
+          ),
         ],
         currentIndex: tab.value,
         onTap: (i) => tab.value = i,

@@ -12,6 +12,7 @@ import 'package:frontend/core/extensions/date_time.dart';
 import 'package:frontend/core/extensions/string.dart';
 import 'package:frontend/core/extensions/text_style.dart';
 import 'package:frontend/core/helpers/formatters.dart';
+import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/widgets/height_crossfade.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/core/widgets/secondary_button.dart';
@@ -32,8 +33,10 @@ class EntrySheet extends HookConsumerWidget {
     required this.entries,
     required this.week,
     required this.category,
+    this.isYearly = false,
   });
-  final int week;
+  final int? week;
+  final bool isYearly;
   final Category category;
   final List<Entry> entries;
 
@@ -125,21 +128,30 @@ class EntrySheet extends HookConsumerWidget {
                     ),
                   ],
                 ),
-                HeightCrossFade(
-                  showFirst: !isEditing,
-                  first: EntryTotalView(
-                    key: const ValueKey(1),
-                    category: category,
-                    stateEntries: stateEntries,
-                    week: week,
-                    selectedEntry: selectedEntry,
-                  ),
-                  second: EditEntryView(
-                    key: const ValueKey(2),
-                    lastEditedEntry: lastEditedEntry,
-                    selectedEntry: selectedEntry,
-                  ),
-                ),
+                isYearly
+                    ? EntryTotalView(
+                        key: const ValueKey(1),
+                        category: category,
+                        stateEntries: stateEntries,
+                        week: week,
+                        isYearly: isYearly,
+                        selectedEntry: selectedEntry,
+                      )
+                    : HeightCrossFade(
+                        showFirst: !isEditing,
+                        first: EntryTotalView(
+                          key: const ValueKey(1),
+                          category: category,
+                          stateEntries: stateEntries,
+                          week: week,
+                          selectedEntry: selectedEntry,
+                        ),
+                        second: EditEntryView(
+                          key: const ValueKey(2),
+                          lastEditedEntry: lastEditedEntry,
+                          selectedEntry: selectedEntry,
+                        ),
+                      ),
                 SizedBox(height: keyboardHeight),
               ],
             ),
@@ -288,12 +300,14 @@ class EntryTotalView extends HookConsumerWidget {
   const EntryTotalView({
     super.key,
     required this.stateEntries,
-    required this.week,
+    this.week,
+    this.isYearly = false,
     required this.category,
     required this.selectedEntry,
   });
   final ValueNotifier<List<Entry>> stateEntries;
-  final int week;
+  final int? week;
+  final bool isYearly;
   final Category category;
   final ValueNotifier<Entry?> selectedEntry;
 
@@ -313,11 +327,11 @@ class EntryTotalView extends HookConsumerWidget {
       //Save entry
       try {
         final amount = amountController.text.parseHungarianDecimal;
-        if (amount != null) {
-          final entryDate = week < currentWeek || week > currentWeek
+        if (amount != null && week != null) {
+          final entryDate = week! < currentWeek || week! > currentWeek
               ? DateTime.now().copyWith(
                   month: ref.read(reportProvider),
-                  day: week.weekLimits.$2,
+                  day: week!.weekLimits.$2,
                 )
               : DateTime.now();
           final entry = Entry(
@@ -367,7 +381,7 @@ class EntryTotalView extends HookConsumerWidget {
                   const Icon(LucideIcons.info),
                   Flexible(
                     child: Text(
-                      'no_entries_message'.tr(),
+                      LocaleKeys.no_entries_message.tr(),
                       style: theme.bodySmall,
                     ),
                   ),
@@ -378,7 +392,10 @@ class EntryTotalView extends HookConsumerWidget {
               spacing: 8,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text('edit_manually'.tr(), style: theme.bodySmall.light),
+                Text(
+                  LocaleKeys.edit_manually.tr(),
+                  style: theme.bodySmall.light,
+                ),
                 FilterChipList(
                   initialList: stateEntries.value,
                   onPressed: (e) {
@@ -419,7 +436,7 @@ class EntryTotalView extends HookConsumerWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('total'.tr(), style: theme.headlineMedium),
+            Text(LocaleKeys.total.tr(), style: theme.headlineMedium),
             Row(
               spacing: 8,
               children: [
@@ -440,7 +457,7 @@ class EntryTotalView extends HookConsumerWidget {
                     currencyCode: '',
                   ),
                 ),
-                Text('ft'.tr(), style: theme.headlineMedium),
+                Text(LocaleKeys.ft.tr(), style: theme.headlineMedium),
               ],
             ),
           ],
@@ -492,11 +509,11 @@ class EntryTotalView extends HookConsumerWidget {
               icon: LucideIcons.circlePlus,
               padding: const EdgeInsets.symmetric(vertical: 16.0),
               label: category.type == CategoryType.expense
-                  ? 'add_expense'.tr()
-                  : 'add_income_action'.tr(),
+                  ? LocaleKeys.add_expense.tr()
+                  : LocaleKeys.add_income_action.tr(),
             ),
           ),
-        if (week > currentWeek && !addDisabled)
+        if (week != null && week! > currentWeek && !addDisabled)
           Center(
             child: Row(
               spacing: 12,
@@ -504,7 +521,7 @@ class EntryTotalView extends HookConsumerWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Icon(LucideIcons.info),
-                Text('future_week_notice'.tr()),
+                Text(LocaleKeys.future_week_notice.tr()),
               ],
             ),
           ),

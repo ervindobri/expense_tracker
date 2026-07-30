@@ -24,7 +24,7 @@ class CategoryChartView extends HookConsumerWidget {
   });
 
   final CategoryType selectedType;
-  final ValueNotifier<int> selectedMonth;
+  final ValueNotifier<int?> selectedMonth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -35,9 +35,13 @@ class CategoryChartView extends HookConsumerWidget {
 
     final allEntries =
         ref.watch(monthlyEntriesProvider).value ?? const <int, List<Entry>>{};
+    // No month selected, show total
+    final entriesGrouped = selectedMonth.value == null
+        ? allEntries.entries.expand((e) => e.value).toList()
+        : allEntries[selectedMonth.value];
     final totalAmount = ref.watch(
       amountForTypeProvider((
-        entries: allEntries[selectedMonth.value] ?? [],
+        entries: entriesGrouped ?? [],
         type: selectedType,
       )),
     );
@@ -64,12 +68,14 @@ class CategoryChartView extends HookConsumerWidget {
                   selectedCategory.value = i == null
                       ? null
                       : categories.value?[i];
+
+                  unawaited(HapticFeedback.mediumImpact());
                 },
                 segments: [
                   ...typeCategories.map((cat) {
                     final selectedAmount = ref.watch(
                       amountForCategoryProvider((
-                        entries: allEntries[selectedMonth.value] ?? [],
+                        entries: entriesGrouped ?? [],
                         category: cat.id,
                       )),
                     );
@@ -84,7 +90,7 @@ class CategoryChartView extends HookConsumerWidget {
               ),
             ),
           ),
-          selectedMonth.value > currentMonth
+          selectedMonth.value != null && selectedMonth.value! > currentMonth
               ? const Center(
                   child: Row(
                     spacing: 12,
@@ -102,7 +108,7 @@ class CategoryChartView extends HookConsumerWidget {
                     ...typeCategories.map((c) {
                       final selectedAmount = ref.watch(
                         amountForCategoryProvider((
-                          entries: allEntries[selectedMonth.value] ?? [],
+                          entries: entriesGrouped ?? [],
                           category: c.id,
                         )),
                       );

@@ -87,7 +87,7 @@ class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
         padding: widget.margin,
         child: SizedBox(
           height: widget.height,
-          width: 202,
+          width: 101.0 * widget.items.length,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(radius),
             child: BackdropFilter(

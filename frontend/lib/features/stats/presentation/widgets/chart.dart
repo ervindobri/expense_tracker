@@ -146,7 +146,11 @@ class _ExpenseDonutChartState extends State<ExpenseDonutChart> {
         cornerRadius: 8.0,
         showTitle: false,
         badgeWidget: isTouched
-            ? _PercentBadge(percent: percent, color: segment.color)
+            ? _PercentBadge(
+                label: segment.label,
+                percent: percent,
+                color: segment.color,
+              )
             : null,
         // Pushes the badge outward past the ring, roughly where a
         // finger/cursor would sit over the slice.
@@ -168,8 +172,9 @@ class _ExpenseDonutChartState extends State<ExpenseDonutChart> {
 }
 
 class _PercentBadge extends StatelessWidget {
-  const _PercentBadge({required this.percent, this.color});
+  const _PercentBadge({required this.percent, this.color, required this.label});
   final double percent;
+  final String label;
   final Color? color;
 
   @override
@@ -185,7 +190,15 @@ class _PercentBadge extends StatelessWidget {
           BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
         ],
       ),
-      child: Text('${percent.toStringAsFixed(0)}%', style: context.bodySmall),
+      child: Row(
+        spacing: 4,
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(label),
+          Text('${percent.toStringAsFixed(0)}%', style: context.bodySmall),
+        ],
+      ),
     );
   }
 }

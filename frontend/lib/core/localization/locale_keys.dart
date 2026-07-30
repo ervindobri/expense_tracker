@@ -1,6 +1,7 @@
 class LocaleKeys {
   static const home = 'home';
   static const stats = 'stats';
+  static const settings = 'settings';
   static const add_income = 'add_income';
   static const no_internet_connection = 'no_internet_connection';
   static const please_check_connection = 'please_check_connection';

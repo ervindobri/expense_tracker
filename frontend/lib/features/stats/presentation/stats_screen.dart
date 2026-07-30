@@ -21,7 +21,7 @@ class StatsScreen extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedType = useState(CategoryType.expense);
-    final selectedMonth = useState(DateTime.now().month);
+    final selectedMonth = useState<int?>(DateTime.now().month);
     final scrollController = useScrollController();
     final scrolledArea = useState(0.0);
     useEffect(() {

@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:fluent_ui/fluent_ui.dart' hide Colors, Divider;
+import 'package:fluent_ui/fluent_ui.dart' hide Divider;
 import 'package:flutter/material.dart' show Divider, Durations;
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -120,7 +120,7 @@ class CategoryChartView extends HookConsumerWidget {
                         percentageOfTotal: percentageOfTotal,
                         selected: selectedCategory.value == c,
                         selectedAmount: selectedAmount,
-                        onTap: () {
+                        onTap: () async {
                           if (selectedCategory.value == c) {
                             selectedCategory.value = null;
                           } else {

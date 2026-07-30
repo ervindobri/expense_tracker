@@ -32,16 +32,20 @@ class InternetConnectionNotifier extends Notifier<InternetConnectionStatus> {
 
   Future<void> _initialize() async {
     final initialConnectivity = await _connectivity.checkConnectivity();
-    state = await _resolveStatus(initialConnectivity);
+    state = await _resolveStatus(state, initialConnectivity);
 
     _subscription = _connectivity.onConnectivityChanged.listen((results) async {
-      state = await _resolveStatus(results);
+      state = await _resolveStatus(state, results);
     });
   }
 
   Future<InternetConnectionStatus> _resolveStatus(
+    InternetConnectionStatus previousStatus, 
     List<ConnectivityResult> connectivityResults,
   ) async {
+    if (previousStatus == InternetConnectionStatus.online) {
+      return previousStatus;
+    }
     if (connectivityResults.contains(ConnectivityResult.none)) {
       return InternetConnectionStatus.offline;
     }

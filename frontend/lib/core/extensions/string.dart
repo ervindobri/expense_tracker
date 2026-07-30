@@ -83,7 +83,7 @@ extension IntExt on int {
       2 => (7, 13),
       3 => (14, 20),
       4 => (21, 27),
-      5 => (28, 31),
+      5 => (28, 31), // some months have until 30 only (except February)
       _ => (1, 31),
     };
   }

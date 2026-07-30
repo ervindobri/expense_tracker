@@ -106,7 +106,7 @@ class EntrySheet extends HookConsumerWidget {
                       spacing: 8,
                       children: [
                         Text(
-                          '📌 ${week == 6 ? 'total'.tr() : 'week'.tr(namedArgs: {'value': '$week'})} >',
+                          '📌 ${week == 6 ? LocaleKeys.total.tr() : LocaleKeys.week.tr(namedArgs: {'value': '$week'})} >',
                           style: theme.bodySmall?.copyWith(height: 1.5),
                         ),
                         Text(
@@ -227,7 +227,7 @@ class EditEntryView extends HookWidget {
             border: FluentTheme.of(context).inputBorder(focused: false),
             enabledBorder: FluentTheme.of(context).inputBorder(focused: false),
             isDense: true,
-            hintText: 'type_notes_here'.tr(),
+            hintText: LocaleKeys.type_notes_here.tr(),
             contentPadding: const EdgeInsets.symmetric(
               vertical: 4.0,
               horizontal: 12.0,
@@ -262,7 +262,7 @@ class EditEntryView extends HookWidget {
                         }
                         toastification.show(
                           title: Text(
-                            'error_updating_entry'.tr(
+                            LocaleKeys.error_updating_entry.tr(
                               namedArgs: {'error': e.toString()},
                             ),
                           ),
@@ -272,7 +272,7 @@ class EditEntryView extends HookWidget {
                     },
                     padding: const EdgeInsets.all(12.0),
                     icon: LucideIcons.checkCircle,
-                    label: 'save_changes'.tr(),
+                    label: LocaleKeys.save_changes.tr(),
                   );
                 },
               ),
@@ -286,7 +286,7 @@ class EditEntryView extends HookWidget {
                 padding: const EdgeInsets.all(12.0),
                 icon: LucideIcons.arrowLeft,
                 outline: false,
-                label: 'back'.tr(),
+                label: LocaleKeys.back.tr(),
               ),
             ),
           ],
@@ -313,7 +313,10 @@ class EntryTotalView extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentWeek = DateTime.now().currentWeek;
+    final now = DateTime.now();
+    final currentMonth = now.month;
+
+    final currentWeek = now.currentWeek;
     final theme = Theme.of(context).textTheme;
     final total = stateEntries.value.fold(
       0.0,
@@ -328,12 +331,19 @@ class EntryTotalView extends HookConsumerWidget {
       try {
         final amount = amountController.text.parseHungarianDecimal;
         if (amount != null && week != null) {
-          final entryDate = week! < currentWeek || week! > currentWeek
-              ? DateTime.now().copyWith(
-                  month: ref.read(reportProvider),
+          final month = ref.read(reportProvider);
+          final entryDate =
+              month != currentMonth ||
+                  week! < currentWeek ||
+                  week! > currentWeek
+              ? now.copyWith(
+                  month: month,
                   day: week!.weekLimits.$2,
+                  hour: 12,
+                  minute: 0,
+                  second: 0,
                 )
-              : DateTime.now();
+              : now;
           final entry = Entry(
             id: -1,
             amount: amount,

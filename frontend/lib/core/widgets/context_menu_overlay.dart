@@ -21,6 +21,7 @@ class ContextMenuOverlay<T> extends HookWidget {
     required this.child,
     this.title,
     this.width,
+    this.padding,
   });
 
   final List<T> items;
@@ -29,6 +30,7 @@ class ContextMenuOverlay<T> extends HookWidget {
   final Widget child;
   final String? title;
   final double? width;
+  final EdgeInsets? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +78,14 @@ class ContextMenuOverlay<T> extends HookWidget {
     return InkWell(
       onTap: openOverlay,
       // behavior: HitTestBehavior.opaque,
-      child: KeyedSubtree(key: triggerKey.value, child: child),
+      borderRadius: BorderRadius.circular(24.0),
+      child: KeyedSubtree(
+        key: triggerKey.value,
+        child: Padding(
+          padding: padding ?? const EdgeInsets.all(8.0),
+          child: child,
+        ),
+      ),
     );
   }
 }
@@ -115,7 +124,6 @@ class _ContextMenuOverlayContentState<T>
 
   late final AnimationController _controller;
   late final Animation<double> _animation;
-
 
   @override
   void initState() {
@@ -194,9 +202,9 @@ class _ContextMenuOverlayContentState<T>
               width: rect.width,
               height: rect.height,
               child: ClipRRect(
-                      borderRadius: BorderRadius.circular(radius),
+                borderRadius: BorderRadius.circular(radius),
                 child: BlurredMaterial(
-                  color: color.withValues(alpha: 0.65,),
+                  color: color.withValues(alpha: 0.65),
                   sigmaX: 8,
                   sigmaY: 8,
                   child: Container(

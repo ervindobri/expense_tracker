@@ -5,12 +5,14 @@ import 'package:flutter/material.dart'
     hide Tooltip, IconButton, ElevatedButton, TextButton;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:frontend/core/app/theme.dart';
+import 'package:frontend/core/helpers/toastification_service.dart';
 import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/network/internet_connection_provider.dart';
 import 'package:frontend/core/widgets/animated_indexed_stack.dart';
 import 'package:frontend/core/widgets/liquid_tabbar.dart';
 import 'package:frontend/core/widgets/pass_through.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
+import 'package:frontend/features/settings/presentation/settings_screen.dart';
 import 'package:frontend/features/stats/presentation/stats_screen.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/passthrough_enabled_notifier.dart';
@@ -19,7 +21,8 @@ import 'package:frontend/features/tracker/presentation/widgets/balance_view.dart
 import 'package:frontend/features/tracker/presentation/widgets/entries_view.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:toastification/toastification.dart';
+
+
 
 class App extends ConsumerWidget {
   const App({super.key});
@@ -27,31 +30,6 @@ class App extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
-    if (!kIsWeb) {
-      ref.watch(internetConnectionProvider);
-
-      ref.listen<InternetConnectionStatus>(internetConnectionProvider, (
-        _,
-        next,
-      ) {
-        if (next == InternetConnectionStatus.offline) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            toastification.show(
-              context: context,
-              direction: TextDirection.ltr,
-              type: ToastificationType.error,
-              style: ToastificationStyle.flat,
-              title: Text(LocaleKeys.no_internet_connection.tr()),
-              description: Text(LocaleKeys.please_check_connection.tr()),
-              alignment: Alignment.topCenter,
-              autoCloseDuration: const Duration(seconds: 4),
-              showProgressBar: false,
-            );
-          });
-        }
-      });
-    }
-
     return FluentApp(
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
@@ -82,6 +60,25 @@ class HomeShell extends HookConsumerWidget {
     final month = ref.watch(reportProvider);
     final balance = ref.watch(balanceProvider(month)).value;
     final tab = useState(0);
+
+    if (!kIsWeb) {
+      ref.watch(internetConnectionProvider);
+
+      ref.listen<InternetConnectionStatus>(internetConnectionProvider, (
+        _,
+        next,
+      ) {
+        if (next == InternetConnectionStatus.offline) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ToastificationService.showError(
+              context: context,
+              title: LocaleKeys.no_internet_connection.tr(),
+              description: LocaleKeys.please_check_connection.tr(),
+            );
+          });
+        }
+      });
+    }
     return Scaffold(
       backgroundColor: FluentTheme.of(context).scaffoldBackgroundColor,
       floatingActionButton: balance?.incomes == 0.0
@@ -132,6 +129,7 @@ class HomeShell extends HookConsumerWidget {
               ],
             ),
             const StatsScreen(),
+            const SettingsScreen(),
           ],
         ),
       ),

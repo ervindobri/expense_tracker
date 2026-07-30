@@ -81,6 +81,15 @@ extension FluentThemeDataExt on FluentThemeData {
   Color get containerColor => brightness == Brightness.dark
       ? const Color(0xff1A1A1A)
       : const Color(0xffF5F5F5);
+
+
+  List<BoxShadow> get boxShadow => [
+    BoxShadow(
+      color: shadowColor.withValues(alpha: 0.15),
+      blurRadius: 24.0,
+      spreadRadius: -4,
+    ),
+  ];
 }
 
 final themeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(

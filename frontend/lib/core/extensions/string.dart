@@ -17,21 +17,30 @@ extension StringExt on String? {
 
 extension DoubleExt on double {
   String get formatCurrency {
-    return CurrencyFormatter.format(this, alwaysShowDecimals: true);
+    return CurrencyFormatter.format(
+      this,
+      alwaysShowDecimals: true,
+      symbol: 'Ft',
+    );
   }
 
-  String formatCurrencySymbol({bool showDecimals = false}) {
+  String formatCurrencySymbol({bool showDecimals = false, String? symbol}) {
     return CurrencyFormatter.format(
       this,
       alwaysShowDecimals: showDecimals,
       showSymbol: true,
+      symbol: symbol,
     );
   }
 }
 
 extension NumExt on num {
   String get formatCurrency {
-    return CurrencyFormatter.format(this, alwaysShowDecimals: true);
+    return CurrencyFormatter.format(
+      this,
+      alwaysShowDecimals: true,
+      symbol: 'Ft',
+    );
   }
 
   String get formatCurrencySymbol {
@@ -39,6 +48,7 @@ extension NumExt on num {
       this,
       alwaysShowDecimals: true,
       showSymbol: true,
+      symbol: 'Ft',
     );
   }
 }
@@ -89,11 +99,11 @@ extension IntExt on int {
   }
   
   String get formatCurrency {
-    return CurrencyFormatter.format(this);
+    return CurrencyFormatter.format(this, symbol: 'Ft');
   }
 
   String get formatCurrencySymbol {
-    return CurrencyFormatter.format(this, showSymbol: true);
+    return CurrencyFormatter.format(this, showSymbol: true, symbol: 'Ft');
   }
 }
 
@@ -125,6 +135,7 @@ class CurrencyFormatter {
     num amount, {
     bool alwaysShowDecimals = false,
     bool showSymbol = false,
+    String? symbol,
   }) {
     final isNegative = amount < 0;
     final absAmount = amount.abs();
@@ -141,7 +152,7 @@ class CurrencyFormatter {
         ? '$groupedWhole,$decimalPart'
         : groupedWhole;
 
-    return '${isNegative ? '-' : ''}$numberPart${showSymbol ? ' Ft' : ''}';
+    return '${isNegative ? '-' : ''}$numberPart${showSymbol ? ' ${symbol ?? 'Ft'}' : ''}';
   }
 
   static String _groupThousands(String digits) {

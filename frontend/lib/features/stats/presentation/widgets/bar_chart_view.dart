@@ -27,7 +27,7 @@ class BarChartView extends HookConsumerWidget {
 
   final CategoryType type;
   final ValueNotifier<int?> selectedMonth;
-  final ScrollController? scrollController; 
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,24 +40,25 @@ class BarChartView extends HookConsumerWidget {
         ? allEntries.entries.expand((e) => e.value).toList()
         : allEntries[selectedMonth.value];
     final selectedAmount = ref.watch(
-      amountForTypeProvider((
-        entries: entriesGrouped ?? [],
-        type: type,
-      )),
+      amountForTypeProvider((entries: entriesGrouped ?? [], type: type)),
     );
     final max = ref.watch(maxMonthProvider(type)).$2.amount;
     final scrolledArea = useState(0.0);
     final height = useState(maxHeight);
-    useEffect((){
+    useEffect(() {
       void listener() {
-        scrolledArea.value = (scrollController!.offset / maxHeight) / 2;
-        height.value = (maxHeight * (1 - scrolledArea.value)).clamp(0.0, maxHeight);
+        scrolledArea.value = scrollController!.offset / maxHeight;
+        height.value = (maxHeight * (1 - scrolledArea.value / 2)).clamp(
+          0.0,
+          maxHeight,
+        );
       }
+
       scrollController?.addListener(listener);
       return () => scrollController?.removeListener(listener);
     });
     return ColoredBox(
-          color: FluentTheme.of(context).scaffoldBackgroundColor,
+      color: FluentTheme.of(context).scaffoldBackgroundColor,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
@@ -65,7 +66,11 @@ class BarChartView extends HookConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: lerpDouble(0, 42.0, 1- scrolledArea.value)!.clamp(0, 42.0),
+              height: lerpDouble(
+                0,
+                42.0,
+                1 - scrolledArea.value,
+              )!.clamp(0, 42.0),
               child: Opacity(
                 opacity: 1 - scrolledArea.value.clamp(0.0, 1.0),
                 child: Row(
@@ -104,7 +109,11 @@ class BarChartView extends HookConsumerWidget {
                       ),
                     ),
                     Opacity(
-                      opacity: lerpDouble(0, .3, 1- scrolledArea.value)!.clamp(0.0, .3),
+                      opacity: lerpDouble(
+                        0,
+                        .3,
+                        1 - scrolledArea.value,
+                      )!.clamp(0.0, .3),
                       child: Text(max.formatCurrency, style: context.bodySmall),
                     ),
                   ],
@@ -131,32 +140,43 @@ class BarChartView extends HookConsumerWidget {
                                   type: type,
                                 )),
                               );
-                  
+
                         final calcHeight = allEntries.isEmpty
                             ? 0.0
                             : totalOfMonth / max;
-                        return GestureDetector(
-                          onTap: () {
-                            if (selectedMonth.value == month) {
-                              selectedMonth.value = null;
-                            } else {
-                              selectedMonth.value = month;
-                            }
-                            unawaited(HapticFeedback.lightImpact());
-                          },
-                          child: AnimatedContainer(
-                            duration: Durations.medium1,
-                            height: (calcHeight * maxHeight).clamp(0.0, 248.0),
-                            width: 20,
-                            decoration: BoxDecoration(
-                              color: FluentTheme.of(context).textColor.withValues(
-                                    alpha: selectedMonth.value == month
-                                        ? 1.0
-                                        : selectedMonth.value == null
-                                        ? 1.0
-                                        : 0.5,
+                        return Expanded(
+                          child: Center(
+                            child: Align(
+                              alignment: Alignment.bottomCenter,
+                              child: GestureDetector(
+                                onTap: () {
+                                  if (selectedMonth.value == month) {
+                                    selectedMonth.value = null;
+                                  } else {
+                                    selectedMonth.value = month;
+                                  }
+                                  unawaited(HapticFeedback.lightImpact());
+                                },
+                                child: AnimatedContainer(
+                                  duration: Durations.medium1,
+                                  height: (calcHeight * maxHeight).clamp(
+                                    0.0,
+                                    248.0,
+                                  ),
+                                  width: 20,
+                                  decoration: BoxDecoration(
+                                    color: FluentTheme.of(context).textColor
+                                        .withValues(
+                                          alpha: selectedMonth.value == month
+                                              ? 1.0
+                                              : selectedMonth.value == null
+                                              ? 1.0
+                                              : 0.5,
+                                        ),
+                                    borderRadius: BorderRadius.circular(4.0),
+                                  ),
+                                ),
                               ),
-                              borderRadius: BorderRadius.circular(4.0),
                             ),
                           ),
                         );
@@ -164,7 +184,10 @@ class BarChartView extends HookConsumerWidget {
                     ],
                   ),
                 ),
-                Divider(height: 1.0, color: FluentTheme.of(context).dividerColor),
+                Divider(
+                  height: 1.0,
+                  color: FluentTheme.of(context).dividerColor,
+                ),
               ],
             ),
             Row(
@@ -187,7 +210,6 @@ class BarChartView extends HookConsumerWidget {
                         scale: isSelected ? 1.25 : 0.95,
                         duration: Durations.short3,
                         child: Container(
-                          width: 24,
                           alignment: Alignment.center,
                           padding: const EdgeInsets.all(4.0),
                           child: Text(
@@ -209,8 +231,6 @@ class BarChartView extends HookConsumerWidget {
     );
   }
 }
-
-
 
 class MySeparator extends StatelessWidget {
   const MySeparator({Key? key, this.height = 1, this.color = Colors.white})

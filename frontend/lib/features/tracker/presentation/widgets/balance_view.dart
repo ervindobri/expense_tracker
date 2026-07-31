@@ -7,10 +7,13 @@ import 'package:flutter/material.dart' hide IconButton, Tooltip, ButtonStyle;
 import 'package:flutter/services.dart';
 import 'package:frontend/core/app/app.dart';
 import 'package:frontend/core/app/theme.dart';
+import 'package:frontend/core/extensions/ref.dart';
 import 'package:frontend/core/extensions/string.dart';
 import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/network/dio_client.dart';
+import 'package:frontend/core/state/currency_provider.dart';
 import 'package:frontend/core/widgets/context_menu_overlay.dart';
+import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/report_notifier.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -27,6 +30,7 @@ class BalanceView extends HookConsumerWidget {
     final month = ref.watch(reportProvider);
     final balanceForMonth = ref.watch(balanceProvider(month));
     final currentMonth = DateTime.now().month;
+    final symbol = ref.watch(currencyProvider).symbol;
     return Container(
       height: balanceHeight, //fixed
       width: MediaQuery.sizeOf(context).width,
@@ -95,7 +99,9 @@ class BalanceView extends HookConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             NumberFlow(
-                              value: balanceForMonth.value?.totalAmount ?? 0.0,
+                              value: ref.convertedAmount(
+                                balanceForMonth.value?.totalAmount ?? 0.0,
+                              ),
                               motionBlur: 4.0,
                               locale: context.locale.languageCode,
                               style: Theme.of(
@@ -103,7 +109,7 @@ class BalanceView extends HookConsumerWidget {
                               ).textTheme.headlineLarge?.copyWith(),
                             ),
                             Text(
-                              LocaleKeys.ft.tr(),
+                              symbol,
                               style: Theme.of(context).textTheme.headlineLarge,
                               maxLines: 1,
                             ),
@@ -130,8 +136,11 @@ class BalanceView extends HookConsumerWidget {
                                   ),
                             ),
                             Text(
-                              (balanceForMonth.value?.expenses ?? 0.0)
-                                  .formatCurrencySymbol(),
+                              ref
+                                  .convertedAmount(
+                                    balanceForMonth.value?.expenses ?? 0.0,
+                                  )
+                                  .formatCurrencySymbol(symbol: symbol),
                               style: Theme.of(context).textTheme.bodyLarge
                                   ?.copyWith(
                                     color: FluentTheme.of(context).failureColor,
@@ -153,8 +162,11 @@ class BalanceView extends HookConsumerWidget {
                                   ),
                             ),
                             Text(
-                              (balanceForMonth.value?.incomes ?? 0.0)
-                                  .formatCurrencySymbol(),
+                              ref
+                                  .convertedAmount(
+                                    balanceForMonth.value?.incomes ?? 0.0,
+                                  )
+                                  .formatCurrencySymbol(symbol: symbol),
                               style: Theme.of(context).textTheme.bodyLarge
                                   ?.copyWith(
                                     color: FluentTheme.of(context).successColor,
@@ -176,8 +188,11 @@ class BalanceView extends HookConsumerWidget {
                                   ),
                             ),
                             Text(
-                              (balanceForMonth.value?.savings ?? 0.0)
-                                  .formatCurrencySymbol(),
+                              ref
+                                  .convertedAmount(
+                                    balanceForMonth.value?.savings ?? 0.0,
+                                  )
+                                  .formatCurrencySymbol(symbol: symbol),
                               style: Theme.of(context).textTheme.bodyLarge,
                               maxLines: 1,
                             ),

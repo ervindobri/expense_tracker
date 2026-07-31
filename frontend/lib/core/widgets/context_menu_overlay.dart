@@ -22,9 +22,11 @@ class ContextMenuOverlay<T> extends HookWidget {
     this.title,
     this.width,
     this.padding,
+    this.initialValue,
   });
 
   final List<T> items;
+  final T? initialValue;
   final Widget Function(BuildContext context, T item) itemBuilder;
   final void Function(T item) onSelected;
   final Widget child;
@@ -36,7 +38,12 @@ class ContextMenuOverlay<T> extends HookWidget {
   Widget build(BuildContext context) {
     final isOpen = useState(false);
     final triggerKey = useRef(GlobalKey());
-    final selectedItem = useState<T?>(null);
+    final selectedItem = useState<T?>(initialValue);
+
+    useEffect(() {
+      selectedItem.value = initialValue;
+      return;
+    }, [initialValue]);
 
     void openOverlay() {
       final box =

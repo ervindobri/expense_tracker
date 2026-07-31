@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/build_context.dart';
+import 'package:frontend/core/state/currency_provider.dart';
 import 'package:frontend/core/widgets/context_menu_overlay.dart';
 import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:frontend/features/settings/domain/reminder_frequency.dart';
@@ -43,6 +44,8 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                       trailing: ContextMenuOverlay<ThemeMode>(
                         items: ThemeMode.values,
+                        initialValue: ref.watch(themeModeProvider),
+
                         itemBuilder: (_, t) => Text(t.name),
                         onSelected: (mode) {
                           ref.read(themeModeProvider.notifier).set(mode);
@@ -64,14 +67,16 @@ class SettingsScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(99.0),
                       ),
                       title: Text(
-                        'Logging Reminder',
+                        'Logging Reminder (20:00)',
                         style: context.bodyMedium,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12.0,
                       ),
                       trailing: ContextMenuOverlay<ReminderFrequency>(
+                        width: 120,
                         items: ReminderFrequency.values,
+                        initialValue: ref.watch(loggingReminderProvider),
                         itemBuilder: (_, t) => Text(t.display),
                         onSelected: (mode) {
                           ref.read(loggingReminderProvider.notifier).set(mode);
@@ -98,9 +103,10 @@ class SettingsScreen extends ConsumerWidget {
                       title: Text('Currency', style: context.bodyMedium),
                       trailing: ContextMenuOverlay<Currency>(
                         items: Currency.values,
+                        initialValue: defaultCurrency,
                         itemBuilder: (_, t) => Text(t.display),
-                        onSelected: (mode) {
-                          //TODO: currency notifier & apply conversions on every amount
+                        onSelected: (currency) {
+                          ref.read(currencyProvider.notifier).set(currency);
                         },
                         padding: const EdgeInsets.all(12.0),
                         child: Row(
@@ -108,7 +114,7 @@ class SettingsScreen extends ConsumerWidget {
                           mainAxisSize: MainAxisSize.min,
                           spacing: 4,
                           children: [
-                            Text(defaultCurrency.display),
+                            Text(ref.watch(currencyProvider).display),
                             const Icon(LucideIcons.chevronDown),
                           ],
                         ),
@@ -119,41 +125,59 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
             if (kDebugMode)
-              ListTile(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(99.0),
-                ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12.0),
-                title: Text(
-                  'Debug show local notification',
-                  style: context.bodyMedium,
-                ),
-                onTap: () async {
-                  final _plugin = FlutterLocalNotificationsPlugin();
-                  final name = await FlutterTimezone.getLocalTimezone();
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 4,
+                children: [
+                  ListTile(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(99.0),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12.0,
+                    ),
+                    title: Text(
+                      'Debug show local notification',
+                      style: context.bodyMedium,
+                    ),
+                    onTap: () async {
+                      final _plugin = FlutterLocalNotificationsPlugin();
+                      final name = await FlutterTimezone.getLocalTimezone();
 
-                  final budapest = getLocation(name.identifier);
-                  await _plugin.zonedSchedule(
-                    id: 1001,
-                    title: 'title',
-                    body: 'This is the body',
-                    scheduledDate: TZDateTime.from(
-                      DateTime.now().add(const Duration(seconds: 1)),
-                      budapest,
+                      final budapest = getLocation(name.identifier);
+                      await _plugin.zonedSchedule(
+                        id: 1001,
+                        title: 'title',
+                        body: 'This is the body',
+                        scheduledDate: TZDateTime.from(
+                          DateTime.now().add(const Duration(seconds: 1)),
+                          budapest,
+                        ),
+                        androidScheduleMode: AndroidScheduleMode.exact,
+                        notificationDetails: const NotificationDetails(
+                          iOS: DarwinNotificationDetails(
+                            presentBadge: true,
+                            presentAlert: true,
+                            presentList: true,
+                            presentSound: true,
+                            sound: 'noti.wav',
+                            presentBanner: true,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  ListTile(
+                    onTap: () {
+                      print(
+                        'Exchange rate: ${ref.read(hufExchangeRateProvider).value}',
+                      );
+                    },
+                    title: Text(
+                      'Test currency conversion: ${ref.watch(convertedAmountProvider(1000.00)).value}',
                     ),
-                    androidScheduleMode: AndroidScheduleMode.exact,
-                    notificationDetails: const NotificationDetails(
-                      iOS: DarwinNotificationDetails(
-                        presentBadge: true,
-                        presentAlert: true,
-                        presentList: true,
-                        presentSound: true,
-                        sound: 'noti.wav',
-                        presentBanner: true
-                      ),
-                    ),
-                  );
-                },
+                  ),
+                ],
               ),
           ],
         ),

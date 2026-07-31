@@ -33,7 +33,7 @@ final class SharedPrefsProvider
   SharedPrefs create() => SharedPrefs();
 }
 
-String _$sharedPrefsHash() => r'd43dae05dc66ee379a4ab243f42204c9cc4486ab';
+String _$sharedPrefsHash() => r'cad83ffdeb978d8fa4069f8f14db77c2bc31d06f';
 
 abstract class _$SharedPrefs extends $AsyncNotifier<SharedPreferences> {
   FutureOr<SharedPreferences> build();

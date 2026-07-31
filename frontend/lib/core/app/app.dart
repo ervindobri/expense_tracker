@@ -62,11 +62,12 @@ class HomeShell extends HookConsumerWidget {
     final balance = ref.watch(balanceProvider(month)).value;
     final tab = useState(0);
 
-    // trigger rebuild
-    ref.watch(sharedPrefsProvider);
 
 
     if (!kIsWeb) {
+      // trigger rebuild
+      ref.watch(sharedPrefsProvider);
+    
       ref.watch(internetConnectionProvider);
 
       ref.listen<InternetConnectionStatus>(internetConnectionProvider, (
@@ -109,33 +110,35 @@ class HomeShell extends HookConsumerWidget {
         currentIndex: tab.value,
         onTap: (i) => tab.value = i,
       ),
-      body: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 840),
-        child: AnimatedIndexedStack(
-          index: tab.value,
-          children: [
-            Stack(
-              alignment: Alignment.topCenter,
-              // spacing: 32,
-              children: [
-                const Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: BalanceView(),
-                ),
-                Positioned.fill(
-                  child: PassthroughContainer(
-                    topPassThroughHeight: balanceHeight,
-                    enabled: ref.watch(passThroughEnabledProvider),
-                    child: const EntriesView(),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 840),
+          child: AnimatedIndexedStack(
+            index: tab.value,
+            children: [
+              Stack(
+                alignment: Alignment.topCenter,
+                // spacing: 32,
+                children: [
+                  const Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: BalanceView(),
                   ),
-                ), // Custom scroll view with sizedbox of height BalanceView
-              ],
-            ),
-            const StatsScreen(),
-            const SettingsScreen(),
-          ],
+                  Positioned.fill(
+                    child: PassthroughContainer(
+                      topPassThroughHeight: balanceHeight,
+                      enabled: ref.watch(passThroughEnabledProvider),
+                      child: const EntriesView(),
+                    ),
+                  ), // Custom scroll view with sizedbox of height BalanceView
+                ],
+              ),
+              const StatsScreen(),
+              const SettingsScreen(),
+            ],
+          ),
         ),
       ),
     );

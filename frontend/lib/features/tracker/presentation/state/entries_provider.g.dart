@@ -46,7 +46,7 @@ final class EntriesProvider
   }
 }
 
-String _$entriesHash() => r'89edd3a5b1b57b06654147436fd5fab109f26560';
+String _$entriesHash() => r'601844be4b9ef82e5cd75b851856eba6b5a1fb20';
 
 @ProviderFor(currentMonthlyEntries)
 const currentMonthlyEntriesProvider = CurrentMonthlyEntriesProvider._();

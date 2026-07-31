@@ -97,7 +97,11 @@ class CategoryChartView extends HookConsumerWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(LucideIcons.info),
-                      Text('You are viewing a Future mont without data'),
+                      Flexible(
+                        child: Text(
+                          'You are viewing a Future month without any data. Add expenses or incomes first.',
+                        ),
+                      ),
                     ],
                   ),
                 )

@@ -2,6 +2,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:frontend/core/storage/shared_prefs_provider.dart';
 import 'package:frontend/features/settings/domain/reminder_frequency.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
@@ -51,6 +52,14 @@ class LoggingReminder extends Notifier<ReminderFrequency> {
     // Kick off plugin/timezone setup once; every public method awaits this
     // before touching the plugin, so call order doesn't matter.
     _initialized = _initializePlugin();
+    // sync
+    ref.listen(sharedPrefsProvider, (_, next) {
+      if (next.isLoading || next.value == null) {
+        return;
+      }
+      final initialValue = next.value?.getLoggingReminder();
+      state = initialValue ?? ReminderFrequency.none;
+    });
     return ReminderFrequency.none;
   }
 
@@ -97,12 +106,15 @@ class LoggingReminder extends Notifier<ReminderFrequency> {
 
     if (frequency == ReminderFrequency.none) {
       state = ReminderFrequency.none;
+
+      ref.watch(sharedPrefsProvider).value?.setLoggingReminder(state.index);
       return true;
     }
 
     final granted = await _requestPermissions();
     if (!granted) {
       state = ReminderFrequency.none;
+      ref.read(sharedPrefsProvider).value?.setLoggingReminder(state.index);
       return false;
     }
 
@@ -127,6 +139,7 @@ class LoggingReminder extends Notifier<ReminderFrequency> {
     );
 
     state = frequency;
+    ref.read(sharedPrefsProvider).value?.setLoggingReminder(state.index);
     return true;
   }
 

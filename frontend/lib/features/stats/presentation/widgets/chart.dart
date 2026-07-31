@@ -154,10 +154,8 @@ class _ExpenseDonutChartState extends State<ExpenseDonutChart> {
     return AnimatedSwitcher(
       duration: Durations.short3,
       transitionBuilder: (child, anim) {
-        return SlideTransition(
-          position: anim.drive(
-            Tween(begin: const Offset(0, -0.1), end: Offset.zero),
-          ),
+        return ScaleTransition(
+          scale: anim.drive(Tween(begin: 0.5, end: 1.0)),
           child: FadeTransition(opacity: anim, child: child),
         );
       },
@@ -178,6 +176,8 @@ class _ExpenseDonutChartState extends State<ExpenseDonutChart> {
               widget.segments[_touchedIndex!].amount.formatCurrencySymbol(),
               style: context.headlineSmall?.copyWith(
                 color: widget.segments[_touchedIndex!].color,
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

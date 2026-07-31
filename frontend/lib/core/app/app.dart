@@ -8,6 +8,7 @@ import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/helpers/toastification_service.dart';
 import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/network/internet_connection_provider.dart';
+import 'package:frontend/core/storage/shared_prefs_provider.dart';
 import 'package:frontend/core/widgets/animated_indexed_stack.dart';
 import 'package:frontend/core/widgets/liquid_tabbar.dart';
 import 'package:frontend/core/widgets/pass_through.dart';
@@ -60,6 +61,10 @@ class HomeShell extends HookConsumerWidget {
     final month = ref.watch(reportProvider);
     final balance = ref.watch(balanceProvider(month)).value;
     final tab = useState(0);
+
+    // trigger rebuild
+    ref.watch(sharedPrefsProvider);
+
 
     if (!kIsWeb) {
       ref.watch(internetConnectionProvider);

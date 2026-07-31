@@ -18,8 +18,6 @@ String.fromEnvironment(
 
 @riverpod
 Dio dioClient(Ref ref) {
-  const url = !kIsWeb
-      ? 'https://expense-tracker.tail0b146d.ts.net/api/'
-      : _apiBaseUrl;
+  const url = _apiBaseUrl;
   return Dio(BaseOptions(baseUrl: url));
 }

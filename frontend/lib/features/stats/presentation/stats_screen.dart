@@ -10,6 +10,7 @@ import 'package:frontend/core/widgets/context_menu_overlay.dart';
 import 'package:frontend/core/widgets/pill_tabbar.dart';
 import 'package:frontend/features/stats/presentation/widgets/bar_chart_view.dart';
 import 'package:frontend/features/stats/presentation/widgets/category_chart_view.dart';
+import 'package:frontend/features/stats/presentation/year_provider.dart';
 import 'package:frontend/features/tracker/domain/models/category.dart';
 import 'package:frontend/features/tracker/presentation/state/entries_provider.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -20,10 +21,12 @@ class StatsScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final currentYear = DateTime.now().year;
     final selectedType = useState(CategoryType.expense);
     final selectedMonth = useState<int?>(DateTime.now().month);
     final scrollController = useScrollController();
     final scrolledArea = useState(0.0);
+    final selectedYear = useState(currentYear);
     useEffect(() {
       void listener() {
         scrolledArea.value = scrollController.offset;
@@ -32,6 +35,14 @@ class StatsScreen extends HookConsumerWidget {
       scrollController.addListener(listener);
       return () => scrollController.removeListener(listener);
     });
+
+    final yearNotifier = ref.read(yearProvider.notifier);
+    useEffect(() {
+      Future.microtask(() {
+        yearNotifier.set(selectedYear.value);
+      });
+      return null;
+    }, [selectedYear.value]);  
     return SafeArea(
       bottom: false,
       child: RefreshIndicator.adaptive(
@@ -56,18 +67,23 @@ class StatsScreen extends HookConsumerWidget {
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                     ContextMenuOverlay(
-                      items: List.generate(2, (i) => i + 2025),
+                      items: List.generate(3, (i) => i + 2024),
                       itemBuilder: (context, index) {
                         return Text(index.toString());
                       },
                       onSelected: (year) {
                         //selected year
+                        selectedYear.value = year;
                       },
                       width: 128,
-                      child: const Row(
+                      child: Row(
                         children: [
-                          Text('This year'),
-                          Icon(LucideIcons.chevronDown),
+                          Text(
+                            selectedYear.value == currentYear
+                                ? 'This year'
+                                : selectedYear.value.toString(),
+                          ),
+                          const Icon(LucideIcons.chevronDown),
                         ],
                       ),
                     ),
@@ -122,7 +138,7 @@ class StatsScreen extends HookConsumerWidget {
               ),
             ),
             const SliverToBoxAdapter(
-              child: SizedBox(height: kToolbarHeight + 24.0),
+              child: SizedBox(height: kToolbarHeight + 48.0),
             ),
           ],
         ),

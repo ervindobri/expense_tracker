@@ -12,7 +12,6 @@ import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/date_time.dart';
 import 'package:frontend/core/extensions/string.dart';
 import 'package:frontend/core/extensions/text_style.dart';
-import 'package:frontend/core/helpers/toastification_service.dart';
 import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/widgets/context_menu_overlay.dart';
 import 'package:frontend/core/widgets/pill_tabbar.dart';
@@ -81,27 +80,6 @@ class EntriesView extends HookConsumerWidget {
 
       parentController.addListener(listener);
       return () => parentController.removeListener(listener);
-    });
-
-    ref.listen(currentMonthlyEntriesProvider, (prev, next) {
-      if (prev?.value == null) {
-        return;
-      }
-      if (next.value != null) {
-        final prevCount = prev?.value?.total ?? 0;
-        if (next.value!.total == prevCount) {
-          return;
-        }
-
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          ToastificationService.showSuccess(
-            context: ref.context,
-            title: next.value!.total > prevCount
-                ? 'New entry added successfully!'
-                : 'Entry removed successfully!',
-          );
-        });
-      }
     });
 
     final TextTheme theme = Theme.of(context).textTheme;
@@ -408,7 +386,7 @@ class EntriesView extends HookConsumerWidget {
               SliverToBoxAdapter(
                 child: SizedBox(
                   height:
-                      32.0 * (categories.value?.length ?? 0) + 96 + 32.0 + 16,
+                      36.0 * (categories.value?.length ?? 0) + 96 + 32.0 + 16,
                   child: Material(
                     color: FluentTheme.of(context).cardColor,
                     child: Padding(
@@ -454,8 +432,10 @@ class EntriesView extends HookConsumerWidget {
                           final isExpense =
                               selectedType.value == CategoryType.expense;
                           return Column(
+                            mainAxisSize: MainAxisSize.min,
                             children: <Widget>[
                               Column(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   ListTile(
                                     dense: true,

@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:frontend/features/stats/presentation/year_provider.dart';
 import 'package:frontend/features/tracker/domain/models/category.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 import 'package:frontend/features/tracker/domain/repositories/entries_repository.dart';
@@ -12,7 +13,9 @@ part 'entries_provider.g.dart';
 @riverpod
 Future<EntriesList?> entries(Ref ref) {
   // Fetch all entries for this year
-  return ref.watch(entryRepositoryProvider).getEntries();
+  final year = ref.watch(yearProvider);
+  print('GET ALL Entries for year $year');
+  return ref.watch(entryRepositoryProvider).getEntries(year: year);
 }
 
 @Riverpod(keepAlive: true)

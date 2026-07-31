@@ -12,6 +12,7 @@ import 'package:frontend/core/extensions/date_time.dart';
 import 'package:frontend/core/extensions/string.dart';
 import 'package:frontend/core/extensions/text_style.dart';
 import 'package:frontend/core/helpers/formatters.dart';
+import 'package:frontend/core/helpers/toastification_service.dart';
 import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/widgets/height_crossfade.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
@@ -359,6 +360,11 @@ class EntryTotalView extends HookConsumerWidget {
           ];
           amountController.clear();
           amountField.requestFocus();
+
+          ToastificationService.showSuccess(
+            context: ref.context,
+            title: 'New entry added successfully!',
+          );
         }
       } catch (e, _) {
         if (kDebugMode) {

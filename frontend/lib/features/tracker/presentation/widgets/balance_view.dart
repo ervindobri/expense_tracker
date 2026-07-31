@@ -43,13 +43,13 @@ class BalanceView extends HookConsumerWidget {
         children: [
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: ContextMenuOverlay<int>(
                   title: LocaleKeys.select_month.tr(),
-                  itemBuilder: (BuildContext context, int item) =>
-                      Text(
+                  itemBuilder: (BuildContext context, int item) => Text(
                     item + 1 == currentMonth
                         ? LocaleKeys.this_month.tr()
                         : (item + 1).toMonthLabel,
@@ -105,6 +105,7 @@ class BalanceView extends HookConsumerWidget {
                             Text(
                               LocaleKeys.ft.tr(),
                               style: Theme.of(context).textTheme.headlineLarge,
+                              maxLines: 1,
                             ),
                           ],
                         ),
@@ -135,6 +136,7 @@ class BalanceView extends HookConsumerWidget {
                                   ?.copyWith(
                                     color: FluentTheme.of(context).failureColor,
                                   ),
+                              maxLines: 1,
                             ),
                           ],
                         ),
@@ -157,6 +159,7 @@ class BalanceView extends HookConsumerWidget {
                                   ?.copyWith(
                                     color: FluentTheme.of(context).successColor,
                                   ),
+                              maxLines: 1,
                             ),
                           ],
                         ),
@@ -176,6 +179,7 @@ class BalanceView extends HookConsumerWidget {
                               (balanceForMonth.value?.savings ?? 0.0)
                                   .formatCurrencySymbol(),
                               style: Theme.of(context).textTheme.bodyLarge,
+                              maxLines: 1,
                             ),
                           ],
                         ),
@@ -203,8 +207,7 @@ class BalanceView extends HookConsumerWidget {
                   ),
                 ),
               ),
-              icon: Icon(
-                isDark ? LucideIcons.sun : LucideIcons.moon),
+              icon: Icon(isDark ? LucideIcons.sun : LucideIcons.moon),
               onPressed: () {
                 ref.read(themeModeProvider.notifier).toggle();
                 unawaited(HapticFeedback.lightImpact());
@@ -216,7 +219,7 @@ class BalanceView extends HookConsumerWidget {
               left: 0,
               top: 32,
               child: Text(ref.read(dioClientProvider).options.baseUrl),
-            )
+            ),
         ],
       ),
     );

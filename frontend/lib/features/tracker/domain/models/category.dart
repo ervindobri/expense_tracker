@@ -50,7 +50,7 @@ extension CategoryExt on Category {
     13 => Colors.cyan,
     14 => Colors.teal,
     15 => Colors.greenAccent, //Salary
-    16 => Colors.lightGreen, // others
+    16 => Colors.blueGrey, // gifts
     17 => Colors.lightGreen, //others
     18 => Colors.green,
     19 => Colors.green,

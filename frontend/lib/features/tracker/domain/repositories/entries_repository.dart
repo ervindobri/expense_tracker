@@ -9,7 +9,7 @@ part 'entries_repository.g.dart';
 
 abstract class IEntryRepository {
   Future<List<Category>> getCategories();
-  Future<EntriesList?> getEntries();
+  Future<EntriesList?> getEntries({int year});
 
   Future<int> addEntry(Entry entry);
 
@@ -44,8 +44,9 @@ class TransactionEntryRepository implements IEntryRepository {
   @override
   Future<EntriesList?> getEntries({int? year}) async {
     try {
+      final yearParam = year ?? DateTime.now().year;
       // final result = await client.get('/entries?year=${DateTime.now().year}');
-      final result = await client.get('entries');
+      final result = await client.get('entries?year=$yearParam');
       final data = result.data;
       if (data is List<dynamic>) {
         final parsed = EntriesList(
@@ -85,7 +86,7 @@ class TransactionEntryRepository implements IEntryRepository {
       rethrow;
     }
   }
-  
+
   @override
   Future<bool> removeEntry(int id) async {
     try {
@@ -104,7 +105,7 @@ class TransactionEntryRepository implements IEntryRepository {
       rethrow;
     }
   }
-  
+
   @override
   Future<void> updateEntry(Entry entry) async {
     try {

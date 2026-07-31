@@ -521,11 +521,6 @@ class EntriesView extends HookConsumerWidget {
                                           0.0,
                                           (curre, Entry b) => curre + b.amount,
                                         );
-                                    print(
-                                      entriesForCatWeek
-                                          .map((e) => e.addedDate)
-                                          .join('\n'),
-                                    );
                                     return InkWell(
                                       splashColor: Colors.transparent,
                                       borderRadius: BorderRadius.circular(32),

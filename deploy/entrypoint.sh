@@ -6,7 +6,9 @@ python manage.py migrate --noinput
 python manage.py collectstatic --noinput
 
 # Run script to import entries from Excel sheet
-python manage.py import_expenses import/Spent.xlsx
+python manage.py import_expenses import/Spent.xlsx --year 2024
+python manage.py import_expenses import/Spent.xlsx --year 2025
+python manage.py import_expenses import/Spent.xlsx --year 2026
 
 # bootstrap an admin account on hosts without shell access (TrueNAS):
 # reads DJANGO_SUPERUSER_USERNAME / _EMAIL / _PASSWORD from the env file.

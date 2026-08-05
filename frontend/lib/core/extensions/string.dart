@@ -149,7 +149,7 @@ class CurrencyFormatter {
 
     final showDecimals = alwaysShowDecimals || decimalPart != '00';
     final numberPart = showDecimals
-        ? '$groupedWhole,$decimalPart'
+        ? '$groupedWhole.$decimalPart'
         : groupedWhole;
 
     return '${isNegative ? '-' : ''}$numberPart${showSymbol ? ' ${symbol ?? 'Ft'}' : ''}';

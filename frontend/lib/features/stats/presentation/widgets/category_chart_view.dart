@@ -118,7 +118,10 @@ class CategoryChartView extends HookConsumerWidget {
                       );
 
                       final percentageOfTotal =
-                          selectedAmount * 100 / totalAmount;
+                          (selectedAmount * 100 / totalAmount).clamp(
+                            0.0,
+                            100.0,
+                          );
                       return CategoryCard(
                         category: c,
                         percentageOfTotal: percentageOfTotal,

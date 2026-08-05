@@ -11,7 +11,7 @@ Future<void> main() async {
     EasyLocalization(
       supportedLocales: const [Locale('hu', 'HU'), Locale('en', 'US')],
       path: 'assets/translations',
-      fallbackLocale: const Locale('en', 'US'),
+      fallbackLocale: const Locale('hu', 'HU'),
       child: const ProviderScope(child: ToastificationWrapper(child: App())),
     ),
   );

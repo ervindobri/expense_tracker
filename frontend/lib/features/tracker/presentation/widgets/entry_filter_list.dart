@@ -1,4 +1,5 @@
-import 'package:fluent_ui/fluent_ui.dart';
+import 'package:fluent_ui/fluent_ui.dart' hide Scrollbar;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/build_context.dart';
@@ -124,16 +125,24 @@ class _FilterChipListState<T> extends State<FilterChipList<T>> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: SizedBox(
-        height: 48,
-        child: AnimatedList(
-          key: _listKey,
+        height: 48 + (kIsWeb ? 36.0 : 0.0),
+        child: Scrollbar(
           controller: controller,
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12.0),
-          initialItemCount: _filters.length,
-          itemBuilder: (context, index, animation) {
-            return _buildChip(index, _filters[index], animation);
-          },
+          thickness: 12.0,
+          child: AnimatedList(
+            key: _listKey,
+            controller: controller,
+            physics: const AlwaysScrollableScrollPhysics(),
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(
+              horizontal: 12.0,
+              vertical: kIsWeb ? 12.0 : 0.0,
+            ),
+            initialItemCount: _filters.length,
+            itemBuilder: (context, index, animation) {
+              return _buildChip(index, _filters[index], animation);
+            },
+          ),
         ),
       ),
     );

@@ -45,6 +45,7 @@ class StatsScreen extends HookConsumerWidget {
     }, [selectedYear.value]);  
     return SafeArea(
       bottom: false,
+      top: true,
       child: RefreshIndicator.adaptive(
         onRefresh: () {
           ref.invalidate(monthlyEntriesProvider);
@@ -58,7 +59,10 @@ class StatsScreen extends HookConsumerWidget {
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 16.0,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

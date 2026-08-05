@@ -30,4 +30,12 @@ extension CurrencyCode on Currency {
         return 'USD';
     }
   }
+
+  double get fallbackExchangeRate {
+    return switch (this) {
+      Currency.huf => 1.0,
+      Currency.eur => 0.00276,
+      Currency.usd => 0.00318,
+    };
+  }
 }

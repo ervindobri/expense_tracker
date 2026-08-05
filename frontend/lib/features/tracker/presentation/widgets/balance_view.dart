@@ -14,6 +14,7 @@ import 'package:frontend/core/network/dio_client.dart';
 import 'package:frontend/core/state/currency_provider.dart';
 import 'package:frontend/core/widgets/context_menu_overlay.dart';
 import 'package:frontend/features/settings/domain/currency.dart';
+import 'package:frontend/features/stats/presentation/year_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/report_notifier.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -27,10 +28,14 @@ class BalanceView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = FluentTheme.of(context).brightness == Brightness.dark;
     // final compact = isCompactLayout(context);
+    final now = DateTime.now();
+    final year = ref.watch(yearProvider);
+    final currentYear = now.year;
     final month = ref.watch(reportProvider);
+    final currentMonth = now.month;
     final balanceForMonth = ref.watch(balanceProvider(month));
-    final currentMonth = DateTime.now().month;
     final symbol = ref.watch(currencyProvider).symbol;
+
     return Container(
       height: balanceHeight, //fixed
       width: MediaQuery.sizeOf(context).width,
@@ -84,9 +89,10 @@ class BalanceView extends HookConsumerWidget {
                 children: [
                   Column(
                     spacing: 12,
-                    children: [
+                    children: [ 
                       Text(
-                        LocaleKeys.total_balance.tr(),
+                        LocaleKeys.total_balance.tr() +
+                            (year != currentYear ? '- $year' : ''),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Theme.of(context).hintColor,
                           fontWeight: FontWeight.w200,
@@ -104,6 +110,11 @@ class BalanceView extends HookConsumerWidget {
                               ),
                               motionBlur: 4.0,
                               locale: context.locale.languageCode,
+                              format: const NumberFlowFormat.currency(
+                                maxFraction: 0,
+                                sign: SignDisplay.negative,
+                                currencyCode: '',
+                              ),
                               style: Theme.of(
                                 context,
                               ).textTheme.headlineLarge?.copyWith(),

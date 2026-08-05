@@ -59,13 +59,13 @@ class DecimalInputFormatter extends TextInputFormatter {
     var text = newValue.text;
 
     // Strip anything that isn't a digit or comma
-    text = text.replaceAll(RegExp(r'[^\d,]'), '');
+    text = text.replaceAll(RegExp(r'[^\d.]'), '');
 
     // Keep only the first comma; drop any further ones
-    final firstComma = text.indexOf(',');
+    final firstComma = text.indexOf('.');
     if (firstComma != -1) {
       final before = text.substring(0, firstComma + 1);
-      final after = text.substring(firstComma + 1).replaceAll(',', '');
+      final after = text.substring(firstComma + 1).replaceAll('.', '');
       text = before + after;
 
       // Optionally cap decimal digits after the comma

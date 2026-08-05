@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:http/http.dart' as http;
 
@@ -50,7 +51,10 @@ class CurrencyService {
     } on CurrencyConversionException {
       rethrow;
     } catch (e) {
-      throw CurrencyConversionException('Network error: $e');
+      if (kDebugMode) {
+        print(CurrencyConversionException('Network error: $e'));
+      }
+      return to.fallbackExchangeRate;
     }
   }
 

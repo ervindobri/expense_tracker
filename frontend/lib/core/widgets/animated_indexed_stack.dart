@@ -24,19 +24,24 @@ class _AnimatedIndexedStackState extends State<AnimatedIndexedStack>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
+  late Animation<Offset> _leftSlideAnimation;
+  late Animation<Offset> _rightSlideAnimation;
 
   int _currentIndex = 0;
+  int _previousIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.index;
+    
 
     _controller = AnimationController(vsync: this, duration: widget.duration);
 
     _initAnimations();
-    _controller.forward();
+    _controller.forward().then((_) {
+      _previousIndex = _currentIndex;
+    });
   }
 
   void _initAnimations() {
@@ -45,7 +50,11 @@ class _AnimatedIndexedStackState extends State<AnimatedIndexedStack>
       end: 1.0,
     ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
-    _slideAnimation = Tween<Offset>(
+    _leftSlideAnimation = Tween<Offset>(
+      begin: Offset(-widget.slideOffset, 0.0), // Subtle slide from the right
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
+    _rightSlideAnimation = Tween<Offset>(
       begin: Offset(widget.slideOffset, 0.0), // Subtle slide from the right
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
@@ -58,7 +67,9 @@ class _AnimatedIndexedStackState extends State<AnimatedIndexedStack>
       setState(() {
         _currentIndex = widget.index;
       });
-      _controller.forward(from: 0.0);
+      _controller.forward(from: 0.0).then((_) {
+        _previousIndex = _currentIndex;
+      });
     }
   }
 
@@ -85,11 +96,13 @@ class _AnimatedIndexedStackState extends State<AnimatedIndexedStack>
                   true, // Keeps state (scroll positions, form data, etc.)
               child: AnimatedBuilder(
                 animation: _controller,
-                builder: (context, child) {
+                builder: (_, child) {
                   return FadeTransition(
                     opacity: _fadeAnimation,
                     child: SlideTransition(
-                      position: _slideAnimation,
+                      position: _currentIndex < _previousIndex
+                          ? _leftSlideAnimation
+                          : _rightSlideAnimation,
                       child: child,
                     ),
                   );

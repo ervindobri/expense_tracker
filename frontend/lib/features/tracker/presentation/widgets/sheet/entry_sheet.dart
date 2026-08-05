@@ -28,6 +28,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:number_flow_flutter/number_flow_flutter.dart';
 import 'package:toastification/toastification.dart';
 
+
+typedef BoolCallback = void Function(bool);
 class EntrySheet extends HookConsumerWidget {
   const EntrySheet({
     super.key,
@@ -35,11 +37,13 @@ class EntrySheet extends HookConsumerWidget {
     required this.week,
     required this.category,
     this.isYearly = false,
+    this.onEdited,
   });
   final int? week;
   final bool isYearly;
   final Category category;
   final List<Entry> entries;
+  final BoolCallback? onEdited;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -68,6 +72,13 @@ class EntrySheet extends HookConsumerWidget {
       });
       return;
     }, []);
+
+    useEffect(() {
+      if (stateEntries.value != entries) {
+        onEdited?.call(stateEntries.value.isNotEmpty);
+      }
+      return;
+    }, [stateEntries.value]);
     return Wrap(
       children: [
         AnimatedScale(
@@ -99,6 +110,7 @@ class EntrySheet extends HookConsumerWidget {
             padding: const EdgeInsets.all(16.0),
             clipBehavior: Clip.none,
             child: Column(
+              spacing: 24,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -382,7 +394,7 @@ class EntryTotalView extends HookConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox(
-          height: 82,
+          height: 82 + (kIsWeb ? 46.0 : 0.0),
           child: AnimatedCrossFade(
             firstChild: Container(
               width: context.width,
@@ -492,6 +504,7 @@ class EntryTotalView extends HookConsumerWidget {
                       focusNode: amountField,
                       decoration: InputDecoration(
                         alignLabelWithHint: true,
+                        hintText: '0.00',
                         border: InputBorder.none,
                         hintStyle: theme.headlineLarge?.copyWith(
                           color: theme.headlineLarge?.color?.withAlpha(128),

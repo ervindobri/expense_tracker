@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:fluent_ui/fluent_ui.dart' hide Colors, Divider;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -114,7 +115,10 @@ class BarChartView extends HookConsumerWidget {
                         .3,
                         1 - scrolledArea.value,
                       )!.clamp(0.0, .3),
-                      child: Text(max.formatCurrency, style: context.bodySmall),
+                      child: Text(
+                        max.formatCurrency,
+                        style: kIsWeb ? context.bodyMedium : context.bodySmall,
+                      ),
                     ),
                   ],
                 ),
@@ -145,25 +149,25 @@ class BarChartView extends HookConsumerWidget {
                             ? 0.0
                             : totalOfMonth / max;
                         return Expanded(
-                          child: Center(
-                            child: Align(
-                              alignment: Alignment.bottomCenter,
-                              child: GestureDetector(
-                                onTap: () {
-                                  if (selectedMonth.value == month) {
-                                    selectedMonth.value = null;
-                                  } else {
-                                    selectedMonth.value = month;
-                                  }
-                                  unawaited(HapticFeedback.lightImpact());
-                                },
+                          child: GestureDetector(
+                            onTap: () {
+                              if (selectedMonth.value == month) {
+                                selectedMonth.value = null;
+                              } else {
+                                selectedMonth.value = month;
+                              }
+                              unawaited(HapticFeedback.lightImpact());
+                            },
+                            child: Center(
+                              child: Align(
+                                alignment: Alignment.bottomCenter,
                                 child: AnimatedContainer(
                                   duration: Durations.medium1,
                                   height: (calcHeight * maxHeight).clamp(
                                     0.0,
                                     248.0,
                                   ),
-                                  width: 20,
+                                  width: kIsWeb ? 32 : 20,
                                   decoration: BoxDecoration(
                                     color: FluentTheme.of(context).textColor
                                         .withValues(
@@ -210,12 +214,17 @@ class BarChartView extends HookConsumerWidget {
                         scale: isSelected ? 1.25 : 0.95,
                         duration: Durations.short3,
                         child: Container(
+                          color: Colors.transparent,
                           alignment: Alignment.center,
                           padding: const EdgeInsets.all(4.0),
                           child: Text(
                             month.toMonthLabelShort,
                             style: selectedMonth.value == month
-                                ? context.bodySmall?.bold
+                                ? kIsWeb
+                                      ? context.bodyMedium?.bold
+                                      : context.bodySmall?.bold
+                                : kIsWeb
+                                ? context.bodyMedium
                                 : context.bodySmall,
                           ),
                         ),

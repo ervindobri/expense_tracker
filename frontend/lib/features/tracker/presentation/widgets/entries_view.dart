@@ -247,21 +247,27 @@ class EntriesView extends HookConsumerWidget {
                       controller: scrollController,
                       itemCount: 6,
                       shrinkWrap: true,
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 8.0,
+                      ),
                       scrollDirection: Axis.horizontal,
                       separatorBuilder: (_, int index) {
-                        return const SizedBox(width: 32);
+                        return const SizedBox(width: kIsWeb ? 24.0 : 12.0);
                       },
                       itemBuilder: (_, int index) {
                         final bool isSelected = week.value == index + 1;
                         return AnimatedScale(
                           scale: isSelected ? 1.2 : 1.0,
-                          duration: const Duration(milliseconds: 100),
+                          duration: const Duration(milliseconds: 150),
                           child: Material(
                             surfaceTintColor: Colors.transparent,
                             elevation: 0,
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(12),
+                            color: isSelected && kIsWeb
+                                ? FluentTheme.of(context).chipColor
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(99),
                             child: InkWell(
                               splashColor: Colors.transparent,
                               highlightColor: Colors.transparent,
@@ -304,7 +310,7 @@ class EntriesView extends HookConsumerWidget {
                                       key: ValueKey<int>(index),
                                       (month == currentMonth &&
                                                   currentWeek == index + 1
-                                              ? '*'
+                                              ? '⏰'
                                               : '') +
                                           (index == 5
                                               ? LocaleKeys.total.tr()
@@ -317,11 +323,14 @@ class EntriesView extends HookConsumerWidget {
                                           .textTheme
                                           .bodyLarge
                                           ?.copyWith(
-                                            // color: isSelected ? Colors.black : null,
+                                            color: isSelected && kIsWeb
+                                                ? FluentTheme.of(
+                                                    context,
+                                                  ).inverseTextColor
+                                                : null,
                                             fontWeight: isSelected
-                                                ? FontWeight.w500
+                                                ? FontWeight.w700
                                                 : FontWeight.w300,
-                                            fontSize: isSelected ? 16 : 12,
                                           ),
                                     ),
                                   ),
@@ -528,6 +537,7 @@ class EntriesView extends HookConsumerWidget {
                                         unawaited(
                                           HapticFeedback.selectionClick(),
                                         );
+                                        final edited = ValueNotifier(false);
                                         if (kIsWeb) {
                                           await showDialog(
                                             context: context,
@@ -543,6 +553,9 @@ class EntriesView extends HookConsumerWidget {
                                                   week: week.value,
                                                   category: cat,
                                                   entries: entriesForCatWeek,
+                                                  onEdited: (value) {
+                                                    edited.value = value;
+                                                  }
                                                 ),
                                               );
                                             },
@@ -556,10 +569,16 @@ class EntriesView extends HookConsumerWidget {
                                               week: week.value,
                                               category: cat,
                                               entries: entriesForCatWeek,
+                                              onEdited: (value) {
+                                                edited.value = value;
+                                              }
                                             ),
                                           );
                                         }
-                                        ref.invalidate(entriesProvider);
+
+                                        if (edited.value) {
+                                          ref.invalidate(entriesProvider);
+                                        }
                                       },
                                       child: Padding(
                                         padding: const EdgeInsets.symmetric(

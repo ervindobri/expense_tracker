@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/build_context.dart';
+import 'package:frontend/core/helpers/tab_title_changer.dart';
 import 'package:frontend/core/state/currency_provider.dart';
 import 'package:frontend/core/widgets/context_menu_overlay.dart';
 import 'package:frontend/features/settings/domain/currency.dart';
@@ -145,6 +146,24 @@ class SettingsScreen extends ConsumerWidget {
                       final name = await FlutterTimezone.getLocalTimezone();
 
                       final budapest = getLocation(name.identifier);
+
+                      if (kIsWeb) {
+                        final webPlugin = _plugin
+                            .resolvePlatformSpecificImplementation<
+                              WebFlutterLocalNotificationsPlugin
+                            >();
+                        webPlugin?.show(
+                          id: 1001,
+                          title: 'Title',
+                          body: 'bodddyyyyy',
+                          payload: 'dasdasda dsad asdasdasd asdadas',
+                          notificationDetails: const WebNotificationDetails(
+                            direction: WebNotificationDirection.rightToLeft,
+                          ),
+                        );
+                      } else {
+
+                      
                       await _plugin.zonedSchedule(
                         id: 1001,
                         title: 'title',
@@ -165,6 +184,7 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                         ),
                       );
+                      }
                     },
                   ),
                   ListTile(
@@ -176,6 +196,12 @@ class SettingsScreen extends ConsumerWidget {
                     title: Text(
                       'Test currency conversion: ${ref.watch(convertedAmountProvider(1000.00)).value}',
                     ),
+                  ),
+                  ListTile(
+                    onTap: () {
+                      ref.read(tabTitleChangerProvider).debugChange();
+                    },
+                    title: const Text('Test tab title change'),
                   ),
                 ],
               ),

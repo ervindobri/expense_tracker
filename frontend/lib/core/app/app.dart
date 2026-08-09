@@ -6,6 +6,7 @@ import 'package:flutter/material.dart'
     hide Tooltip, IconButton, ElevatedButton, TextButton;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:frontend/core/app/theme.dart';
+import 'package:frontend/core/helpers/tab_title_changer.dart';
 import 'package:frontend/core/helpers/toastification_service.dart';
 import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/network/internet_connection_provider.dart';
@@ -96,6 +97,12 @@ class HomeShell extends HookConsumerWidget {
         }
       });
     }
+
+    final tabTitleReminder = ref.watch(tabTitleChangerProvider);
+    useEffect(() {
+      tabTitleReminder.start();
+      return () => tabTitleReminder.dispose();
+    }, []);
     return Scaffold(
       backgroundColor: FluentTheme.of(context).scaffoldBackgroundColor,
       floatingActionButton: balance?.incomes == 0.0

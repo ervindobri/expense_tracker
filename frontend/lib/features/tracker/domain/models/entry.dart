@@ -7,6 +7,7 @@ class Entry {
     required this.amount,
     required this.addedDate,
     required this.category,
+    required this.createdDate,
     this.notes = '',
   });
   factory Entry.from(Map<String, dynamic> e) {
@@ -17,12 +18,14 @@ class Entry {
       category: e['category'] ?? 0,
       addedDate: DateTime.parse(e['added_date'] ?? '').ignoringTimezone,
       notes: e['notes'] ?? '',
+      createdDate: DateTime.parse(e['created_date'] ?? '').ignoringTimezone,
     );
   }
   final int id;
   final double amount;
   final int category;
   final DateTime addedDate;
+  final DateTime createdDate;
   final String notes;
 
   Map<String, dynamic> toJson() {
@@ -31,6 +34,7 @@ class Entry {
       'category': category,
       'added_date': addedDate.toIso8601String(),
       'notes': notes,
+      'created_date': DateTime.now().toIso8601String(),
     };
   }
 
@@ -41,6 +45,7 @@ class Entry {
       addedDate: addedDate,
       category: category,
       notes: notes ?? this.notes,
+      createdDate: createdDate,
     );
   }
 }
@@ -59,6 +64,10 @@ class EntriesList {
   }
   final int total;
   final List<Entry> items;
+
+  DateTime get lastCreated => items
+      .reduce((a, b) => a.createdDate.isAfter(b.createdDate) ? a : b)
+      .addedDate;
 }
 
 class Balance {

@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:frontend/core/app/app.dart';
 import 'package:frontend/core/app/theme.dart';
+import 'package:frontend/core/extensions/build_context.dart';
 import 'package:frontend/core/extensions/date_time.dart';
 import 'package:frontend/core/extensions/string.dart';
 import 'package:frontend/core/extensions/text_style.dart';
@@ -115,121 +116,124 @@ class EntriesView extends HookConsumerWidget {
                   child: SizedBox(height: balanceHeight),
                 ),
               ),
-              PinnedHeaderSliver(
-                child: AnimatedContainer(
-                  duration: Durations.short3,
-                  decoration: BoxDecoration(
-                    color: offset.value < 1.5
-                        ? Colors.transparent
-                        : FluentTheme.of(context).cardColor,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(36.0),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsetsGeometry.only(
-                      top: lerpDouble(
-                        0,
-                        MediaQuery.viewPaddingOf(context).top,
-                        (offset.value / 2).clamp(0.0, 1.0),
-                      )!,
-                    ),
-                    child: AnimatedCrossFade(
-                      firstChild: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24.0,
-                          vertical: 12.0,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            Text('history'.tr(), style: theme.bodyLarge.bold),
-                            TextButton(
-                              style: TextButton.styleFrom(
-                                foregroundColor: FluentTheme.of(
-                                  context,
-                                ).textColor,
-                                padding: const EdgeInsets.all(4),
-                                backgroundColor: Colors.transparent,
-                                textStyle: theme.bodySmall?.copyWith(
-                                  color: FluentTheme.of(context).textColor,
-                                ),
-                              ),
-                              onPressed: () {
-                                week.value = currentWeek;
-                                isTotal.value = false;
-                                unawaited(HapticFeedback.selectionClick());
-                              },
-                              child: const Text(LocaleKeys.nowLabel).tr(),
-                            ),
-                          ],
-                        ),
+              if (!kIsWeb)
+                PinnedHeaderSliver(
+                  child: AnimatedContainer(
+                    duration: Durations.short3,
+                    decoration: BoxDecoration(
+                      color: offset.value < 1.5
+                          ? Colors.transparent
+                          : FluentTheme.of(context).cardColor,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(36.0),
                       ),
-                      secondChild: Padding(
-                        padding: const EdgeInsets.all(24.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('history'.tr(), style: theme.bodyLarge.bold),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: ContextMenuOverlay<int>(
-                                title: LocaleKeys.selectMonthLabel.tr(),
-                                itemBuilder: (BuildContext context, int item) =>
-                                    Text(
-                                      item + 1 == currentMonth
-                                          ? 'this_month'.tr()
-                                          : (item + 1).toMonthLabel,
-                                    ),
-                                onSelected: (item) {
-                                  ref
-                                      .read(reportProvider.notifier)
-                                      .set(item + 1);
-                                  if (month != item + 1) {
-                                    // set week to Total
-                                    week.value = 6;
-                                    isTotal.value = true;
-                                    scrollController.animateTo(
-                                      scrollController.position.maxScrollExtent,
-                                      duration: Durations.short2,
-                                      curve: Curves.bounceInOut,
-                                    );
-                                  }
-                                  unawaited(HapticFeedback.mediumImpact());
+                    ),
+                    child: Padding(
+                      padding: EdgeInsetsGeometry.only(
+                        top: lerpDouble(
+                          0,
+                          MediaQuery.viewPaddingOf(context).top,
+                          (offset.value / 2).clamp(0.0, 1.0),
+                        )!,
+                      ),
+                      child: AnimatedCrossFade(
+                        firstChild: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24.0,
+                            vertical: 12.0,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: <Widget>[
+                              Text('history'.tr(), style: theme.bodyLarge.bold),
+                              TextButton(
+                                style: TextButton.styleFrom(
+                                  foregroundColor: FluentTheme.of(
+                                    context,
+                                  ).textColor,
+                                  padding: const EdgeInsets.all(4),
+                                  backgroundColor: Colors.transparent,
+                                  textStyle: theme.bodySmall?.copyWith(
+                                    color: FluentTheme.of(context).textColor,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  week.value = currentWeek;
+                                  isTotal.value = false;
+                                  unawaited(HapticFeedback.selectionClick());
                                 },
-                                items: List.generate(
-                                  12,
-                                  growable: false,
-                                  (i) => i,
-                                ),
-                                child: Row(
-                                  spacing: 8,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      month == currentMonth
-                                          ? 'this_month'.tr()
-                                          : month.toMonthLabel,
-                                    ),
-                                    const Icon(
-                                      LucideIcons.chevronDown,
-                                      size: 12,
-                                    ),
-                                  ],
+                                child: const Text(LocaleKeys.nowLabel).tr(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        secondChild: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('history'.tr(), style: theme.bodyLarge.bold),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: ContextMenuOverlay<int>(
+                                  title: LocaleKeys.selectMonthLabel.tr(),
+                                  itemBuilder:
+                                      (BuildContext context, int item) => Text(
+                                        item + 1 == currentMonth
+                                            ? 'this_month'.tr()
+                                            : (item + 1).toMonthLabel,
+                                      ),
+                                  onSelected: (item) {
+                                    ref
+                                        .read(reportProvider.notifier)
+                                        .set(item + 1);
+                                    if (month != item + 1) {
+                                      // set week to Total
+                                      week.value = 6;
+                                      isTotal.value = true;
+                                      scrollController.animateTo(
+                                        scrollController
+                                            .position
+                                            .maxScrollExtent,
+                                        duration: Durations.short2,
+                                        curve: Curves.bounceInOut,
+                                      );
+                                    }
+                                    unawaited(HapticFeedback.mediumImpact());
+                                  },
+                                  items: List.generate(
+                                    12,
+                                    growable: false,
+                                    (i) => i,
+                                  ),
+                                  child: Row(
+                                    spacing: 8,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        month == currentMonth
+                                            ? 'this_month'.tr()
+                                            : month.toMonthLabel,
+                                      ),
+                                      const Icon(
+                                        LucideIcons.chevronDown,
+                                        size: 12,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                        crossFadeState: offset.value >= 1.5
+                            ? CrossFadeState.showSecond
+                            : CrossFadeState.showFirst,
+                        duration: Durations.short3,
                       ),
-                      crossFadeState: offset.value >= 1.5
-                          ? CrossFadeState.showSecond
-                          : CrossFadeState.showFirst,
-                      duration: Durations.short3,
                     ),
                   ),
                 ),
-              ),
               PinnedHeaderSliver(
                 child: AnimatedContainer(
                   duration: Durations.short3,
@@ -237,114 +241,141 @@ class EntriesView extends HookConsumerWidget {
                     color: offset.value < 1.5
                         ? Colors.transparent
                         : FluentTheme.of(context).cardColor,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(36.0),
-                    ),
                   ),
-                  child: SizedBox(
-                    height: 48,
-                    child: ListView.separated(
-                      controller: scrollController,
-                      itemCount: 6,
-                      shrinkWrap: true,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 8.0,
-                      ),
-                      scrollDirection: Axis.horizontal,
-                      separatorBuilder: (_, int index) {
-                        return const SizedBox(width: kIsWeb ? 24.0 : 12.0);
-                      },
-                      itemBuilder: (_, int index) {
-                        final bool isSelected = week.value == index + 1;
-                        return AnimatedScale(
-                          scale: isSelected ? 1.2 : 1.0,
-                          duration: const Duration(milliseconds: 150),
-                          child: Material(
-                            surfaceTintColor: Colors.transparent,
-                            elevation: 0,
-                            color: isSelected && kIsWeb
-                                ? FluentTheme.of(context).chipColor
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(99),
-                            child: InkWell(
-                              splashColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                if (index == 5) {
-                                  week.value = index + 1;
-                                  isTotal.value = true;
-                                } else {
-                                  week.value = index + 1;
-                                  isTotal.value = false;
-                                }
+                  padding: kIsWeb
+                      ? const EdgeInsets.symmetric(vertical: 24.0)
+                      : null,
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        height: 48,
+                        child: ListView.separated(
+                          controller: scrollController,
+                          itemCount: 6,
+                          shrinkWrap: true,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 24,
+                            vertical: 8.0,
+                          ),
+                          scrollDirection: Axis.horizontal,
+                          separatorBuilder: (_, int index) {
+                            return const SizedBox(width: kIsWeb ? 24.0 : 12.0);
+                          },
+                          itemBuilder: (_, int index) {
+                            final bool isSelected = week.value == index + 1;
+                            return AnimatedScale(
+                              scale: isSelected ? 1.2 : 1.0,
+                              duration: const Duration(milliseconds: 150),
+                              child: Material(
+                                surfaceTintColor: Colors.transparent,
+                                elevation: 0,
+                                color: isSelected && kIsWeb
+                                    ? FluentTheme.of(context).chipColor
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(99),
+                                child: InkWell(
+                                  splashColor: Colors.transparent,
+                                  highlightColor: Colors.transparent,
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: () {
+                                    if (index == 5) {
+                                      week.value = index + 1;
+                                      isTotal.value = true;
+                                    } else {
+                                      week.value = index + 1;
+                                      isTotal.value = false;
+                                    }
 
-                                const int itemCount = 6;
-                                final double maxExtent =
-                                    scrollController.position.maxScrollExtent;
-                                final double itemExtent =
-                                    maxExtent /
-                                    (itemCount -
-                                        1); // distance between each item's scroll position
-                                final double offset = (itemExtent * index)
-                                    .clamp(0.0, maxExtent);
+                                    const int itemCount = 6;
+                                    final double maxExtent = scrollController
+                                        .position
+                                        .maxScrollExtent;
+                                    final double itemExtent =
+                                        maxExtent /
+                                        (itemCount -
+                                            1); // distance between each item's scroll position
+                                    final double offset = (itemExtent * index)
+                                        .clamp(0.0, maxExtent);
 
-                                scrollController.animateTo(
-                                  offset,
-                                  duration: Durations.short2,
-                                  curve: Curves.easeIn,
-                                );
-                                unawaited(HapticFeedback.lightImpact());
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 2.0,
-                                  horizontal: 4.0,
-                                ),
-                                child: Center(
-                                  child: AnimatedSwitcher(
-                                    duration: Durations.short1,
-                                    child: Text(
-                                      key: ValueKey<int>(index),
-                                      (month == currentMonth &&
-                                                  currentWeek == index + 1
-                                              ? '⏰'
-                                              : '') +
-                                          (index == 5
-                                              ? LocaleKeys.total.tr()
-                                              : LocaleKeys.week.tr(
-                                                  namedArgs: {
-                                                    'value': '${index + 1}',
-                                                  },
-                                                )),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodyLarge
-                                          ?.copyWith(
-                                            color: isSelected && kIsWeb
-                                                ? FluentTheme.of(
-                                                    context,
-                                                  ).inverseTextColor
-                                                : null,
-                                            fontWeight: isSelected
-                                                ? FontWeight.w700
-                                                : FontWeight.w300,
-                                          ),
+                                    scrollController.animateTo(
+                                      offset,
+                                      duration: Durations.short2,
+                                      curve: Curves.easeIn,
+                                    );
+                                    unawaited(HapticFeedback.lightImpact());
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 2.0,
+                                      horizontal: 4.0,
+                                    ),
+                                    child: Center(
+                                      child: AnimatedSwitcher(
+                                        duration: Durations.short1,
+                                        child: Text(
+                                          key: ValueKey<int>(index),
+                                          (month == currentMonth &&
+                                                      currentWeek == index + 1
+                                                  ? '⏰'
+                                                  : '') +
+                                              (index == 5
+                                                  ? LocaleKeys.total.tr()
+                                                  : LocaleKeys.week.tr(
+                                                      namedArgs: {
+                                                        'value': '${index + 1}',
+                                                      },
+                                                    )),
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyLarge
+                                              ?.copyWith(
+                                                color: isSelected && kIsWeb
+                                                    ? FluentTheme.of(
+                                                        context,
+                                                      ).inverseTextColor
+                                                    : null,
+                                                fontWeight: isSelected
+                                                    ? FontWeight.w700
+                                                    : FontWeight.w300,
+                                              ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
+                            );
+                          },
+                        ),
+                      ),
+                      if (kIsWeb)
+                        Expanded(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: DefaultTextStyle(
+                              style: theme.bodySmall!.copyWith(
+                                color: theme.bodySmall?.color?.withValues(
+                                  alpha: 0.5,
+                                ),
+                              ),
+                              child: Column(
+                                spacing: 2,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Last edited'),
+                                  Text(
+                                    entries.value?.lastCreated.formatDate ?? '',
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
+                        ),
+                    ],
                   ),
                 ),
               ),
-
               PinnedHeaderSliver(
                 child: Container(
                   decoration: BoxDecoration(
@@ -391,11 +422,11 @@ class EntriesView extends HookConsumerWidget {
                   ),
                 ),
               ),
-
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height:
-                      36.0 * (categories.value?.length ?? 0) + 96 + 32.0 + 16,
+                  height: kIsWeb
+                      ? context.height
+                      : 36.0 * (categories.value?.length ?? 0) + 96 + 32.0 + 16,
                   child: Material(
                     color: FluentTheme.of(context).cardColor,
                     child: Padding(
@@ -555,7 +586,7 @@ class EntriesView extends HookConsumerWidget {
                                                   entries: entriesForCatWeek,
                                                   onEdited: (value) {
                                                     edited.value = value;
-                                                  }
+                                                  },
                                                 ),
                                               );
                                             },
@@ -571,7 +602,7 @@ class EntriesView extends HookConsumerWidget {
                                               entries: entriesForCatWeek,
                                               onEdited: (value) {
                                                 edited.value = value;
-                                              }
+                                              },
                                             ),
                                           );
                                         }

@@ -1,4 +1,5 @@
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -101,8 +102,6 @@ class LoggingReminder extends Notifier<ReminderFrequency> {
   /// Returns false if [frequency] requires scheduling but notification
   /// permission was denied (state is reset to `none` in that case).
   Future<bool> set(ReminderFrequency frequency) async {
-    await _initialized;
-    await _plugin.cancel(id: _notificationId);
 
     if (frequency == ReminderFrequency.none) {
       state = ReminderFrequency.none;
@@ -110,6 +109,33 @@ class LoggingReminder extends Notifier<ReminderFrequency> {
       ref.watch(sharedPrefsProvider).value?.setLoggingReminder(state.index);
       return true;
     }
+
+    if (kIsWeb) {
+      final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+          FlutterLocalNotificationsPlugin();
+
+      await flutterLocalNotificationsPlugin.initialize(
+        settings: const InitializationSettings(),
+      );
+
+      final webPlugin = flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            WebFlutterLocalNotificationsPlugin
+          >();
+
+      if (webPlugin != null &&
+          webPlugin.permissionStatus != WebNotificationPermission.granted) {
+        // IMPORTANT: Only call this after a button press!
+        await webPlugin.requestNotificationsPermission();
+      }
+
+      webPlugin?.zonedSchedule(
+        id: _notificationId,
+        scheduledDate: _nextInstance(frequency),
+      );
+    } else {
+      await _initialized;
+      await _plugin.cancel(id: _notificationId);
 
     final granted = await _requestPermissions();
     if (!granted) {
@@ -137,6 +163,9 @@ class LoggingReminder extends Notifier<ReminderFrequency> {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: _matchComponents(frequency),
     );
+
+    }
+
 
     state = frequency;
     ref.read(sharedPrefsProvider).value?.setLoggingReminder(state.index);

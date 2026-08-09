@@ -362,6 +362,7 @@ class EntryTotalView extends HookConsumerWidget {
             amount: amount,
             addedDate: entryDate.ignoringTimezone,
             category: category.id,
+            createdDate: DateTime.now(),
           );
           final result = await ref
               .read(entryRepositoryProvider)

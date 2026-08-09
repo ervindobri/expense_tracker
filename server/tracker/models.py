@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 
@@ -47,6 +48,7 @@ class Entry(models.Model):
     amount = models.FloatField(max_length=10)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     added_date = models.DateTimeField("date published")
+    created_date = models.DateTimeField("date entry was created", auto_now_add=True)
     notes = models.CharField(max_length=100,blank=True, default="")
 
 

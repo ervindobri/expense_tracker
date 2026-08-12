@@ -1,7 +1,9 @@
+import 'dart:collection';
+
+import 'package:collection/collection.dart';
 import 'package:frontend/core/extensions/date_time.dart';
 
 class Entry {
-
   Entry({
     required this.id,
     required this.amount,
@@ -51,7 +53,6 @@ class Entry {
 }
 
 class EntriesList {
-
   EntriesList({required this.total, required this.items});
 
   factory EntriesList.from(Map<String, dynamic> json) {
@@ -68,10 +69,23 @@ class EntriesList {
   DateTime get lastCreated => items
       .reduce((a, b) => a.createdDate.isAfter(b.createdDate) ? a : b)
       .addedDate;
+
+  SplayTreeMap<DateTime, List<Entry>> get grouped {
+    final groupedItems = groupBy(items, (Entry e) {
+      return DateTime(
+        e.createdDate.year,
+        e.createdDate.month,
+        e.createdDate.day,
+      );
+    });
+    return SplayTreeMap<DateTime, List<Entry>>.from(
+      groupedItems,
+      (a, b) => b.compareTo(a),
+    );
+  }
 }
 
 class Balance {
-
   Balance({
     required this.totalAmount,
     required this.expenses,
@@ -81,4 +95,5 @@ class Balance {
   final double expenses;
   final double incomes;
   double get savings => incomes - expenses;
+
 }

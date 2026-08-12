@@ -6,6 +6,11 @@ extension DateTimeExt on DateTime {
     return format.format(this);
   }
 
+  String get formatDayShort {
+    final format = DateFormat('E, y.MM.dd HH:MM ');
+    return format.format(this);
+  }
+
   bool isDayAfterOrSame(DateTime other) {
     return day >= other.day;
   }

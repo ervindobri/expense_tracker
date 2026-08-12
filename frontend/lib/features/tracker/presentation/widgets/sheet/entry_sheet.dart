@@ -175,24 +175,105 @@ class EntrySheet extends HookConsumerWidget {
   }
 }
 
+
+class SingleEntrySheet extends HookWidget {
+  const SingleEntrySheet({super.key, required this.entry});
+
+  final Entry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final lastEditedEntry = useState(entry);
+    final selectedEntry = lastEditedEntry;
+    final theme = Theme.of(context);
+    return Wrap(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: FluentTheme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(40.0),
+            border: GradientBoxBorder(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: FluentTheme.of(context).gradientBorderColors,
+              ),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: FluentTheme.of(context).shadowColor.withAlpha(64),
+                blurRadius: 32,
+                spreadRadius: -4,
+              ),
+            ],
+          ),
+          margin: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(16.0),
+          clipBehavior: Clip.none,
+          child: Column(
+            spacing: 24,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Entry details',
+                    style: theme.textTheme.headlineSmall?.copyWith(height: 1.5),
+                  ),
+                  IconButton.filled(
+                    style: IconButton.styleFrom(
+                      backgroundColor: FluentTheme.of(context).menuColor,
+                      iconSize: 24,
+                    ),
+                    onPressed: () {
+                      unawaited(HapticFeedback.lightImpact());
+                      Navigator.pop(context);
+                    },
+                    icon: const Icon(LucideIcons.x),
+                  ),
+                ],
+              ),
+
+              EditEntryView(
+                lastEditedEntry: lastEditedEntry,
+                selectedEntry: selectedEntry,
+                back: false,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class EditEntryView extends HookWidget {
   const EditEntryView({
     super.key,
     required this.lastEditedEntry,
     required this.selectedEntry,
+    this.back = true,
   });
   final ValueNotifier<Entry?> lastEditedEntry;
   final ValueNotifier<Entry?> selectedEntry;
+  final bool back;
 
   @override
   Widget build(BuildContext context) {
     final notesController = useTextEditingController();
+    final text = useState(notesController.text);
     final theme = FluentTheme.of(context);
     useEffect(() {
       if (lastEditedEntry.value?.notes.isNotEmpty ?? false) {
         notesController.text = lastEditedEntry.value!.notes;
       }
-      return;
+      void listener() {
+        text.value = notesController.text;
+      }
+
+      notesController.addListener(listener);
+      return () => notesController.removeListener(listener);
     }, [lastEditedEntry.value]);
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -241,6 +322,19 @@ class EditEntryView extends HookWidget {
             enabledBorder: FluentTheme.of(context).inputBorder(focused: false),
             isDense: true,
             hintText: LocaleKeys.type_notes_here.tr(),
+            suffixIconConstraints: const BoxConstraints(
+              maxHeight: 36.0,
+              maxWidth: 36.0,
+            ),
+            suffixIcon: notesController.text.isNotEmpty
+                ? IconButton(
+                    iconSize: 20.0,
+                    onPressed: () {
+                      notesController.clear();
+                    },
+                    icon: const Icon(LucideIcons.delete),
+                  )
+                : const SizedBox(),
             contentPadding: const EdgeInsets.symmetric(
               vertical: 4.0,
               horizontal: 12.0,
@@ -260,13 +354,20 @@ class EditEntryView extends HookWidget {
                     onPressed: () {
                       try {
                         final entry = lastEditedEntry.value;
-                        if (entry != null && notesController.text.isNotEmpty) {
+                        if (entry != null) {
+                          final updatedEntry = entry.copyWith(
+                            notes: notesController.text,
+                          );
                           ref
                               .read(entryRepositoryProvider)
                               .updateEntry(
-                                entry.copyWith(notes: notesController.text),
+                                updatedEntry
                               );
-                          selectedEntry.value = null;
+                          if (back) {
+                            selectedEntry.value = null;
+                          } else {
+                            Navigator.pop(context, updatedEntry);
+                          }
                           unawaited(HapticFeedback.lightImpact());
                         }
                       } catch (e, s) {
@@ -290,6 +391,7 @@ class EditEntryView extends HookWidget {
                 },
               ),
             ),
+            if (back)
             FractionallySizedBox(
               widthFactor: 1.0,
               child: SecondaryButton(

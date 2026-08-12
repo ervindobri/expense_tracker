@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 enum CategoryType { expense, income }
@@ -36,24 +34,45 @@ class Category {
 extension CategoryExt on Category {
   Color get color => switch (id) {
     1 => Colors.orange,
-    2 => Colors.yellow,
+    2 => const Color.fromARGB(255, 255, 105, 59), //groceries
     3 => Colors.deepPurple,
     4 => Colors.green,
-    5 => Colors.purple,
+    5 => const Color.fromARGB(255, 176, 144, 39), //drinking out
     6 => Colors.blue,
     7 => Colors.deepOrange,
     8 => Colors.lightBlue,
     9 => Colors.lightGreen,
-    10 => Colors.pink,
-    11 => Colors.amber,
+    10 => const Color.fromARGB(255, 233, 30, 230), //transport
+    11 => Colors.amber, //subs
     12 => Colors.blueGrey,
     13 => Colors.cyan,
     14 => Colors.teal,
-    15 => Colors.greenAccent, //Salary
+    15 => const Color.fromARGB(255, 49, 88, 124), //Salary
     16 => Colors.blueGrey, // gifts
     17 => Colors.lightGreen, //others
-    18 => Colors.green,
-    19 => Colors.green,
+    18 => Colors.green, //cafeteria
     _ => Colors.white,
+  };
+
+  String get emoji => switch (id) {
+    1 => '🏚️', // rent & bills
+    2 => '🍅', // groceries
+    3 => '📦', // supplies
+    4 => '🍝', // dining out
+    5 => '🍻', // drinking out
+    6 => '🖥️', //Electronics & digital
+    7 => '❤️‍🩹', //Health & medicine
+    8 => '👕', //FAshion
+    9 => '👙', // Vacation
+    10 => '🚋', //Transport
+    11 => '🔁', // Subscriptions
+    12 => '💝', // Gifts & dates
+    13 => '🎥', // Entertainment
+    14 => '❔', // Others
+    15 => '💰', //Salary
+    16 => '🎁', // gifts
+    17 => '❔', //others
+    18 => '☕', //cafeteria
+    _ => '$this',
   };
 }

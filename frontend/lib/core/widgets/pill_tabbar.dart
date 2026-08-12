@@ -13,12 +13,14 @@ class ExpenseIncomeTabBar<T> extends StatefulWidget {
     required this.itemToString,
     required this.items,
     this.backgroundColor,
+    this.itemWidth,
   });
   final T? initialTab;
   final ValueChanged<T> onChanged;
   final String Function(T val) itemToString;
   final List<T> items;
   final Color? backgroundColor;
+  final double? itemWidth;
 
   @override
   State<ExpenseIncomeTabBar> createState() => _ExpenseIncomeTabBarState<T>();
@@ -50,7 +52,7 @@ class _ExpenseIncomeTabBarState<T> extends State<ExpenseIncomeTabBar<T>> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 248,
+      width: widget.itemWidth != null ? widget.itemWidth! * 2 + 8 : 248,
       decoration: BoxDecoration(
         color:
             widget.backgroundColor ??
@@ -60,7 +62,7 @@ class _ExpenseIncomeTabBarState<T> extends State<ExpenseIncomeTabBar<T>> {
       padding: const EdgeInsets.all(4),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          const tabWidth = 120.0;
+          final tabWidth = widget.itemWidth ?? 120.0;
           return Stack(
             children: [
               // Sliding highlight

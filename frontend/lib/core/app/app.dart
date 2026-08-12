@@ -18,6 +18,8 @@ import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/features/settings/presentation/settings_screen.dart';
 import 'package:frontend/features/stats/presentation/stats_screen.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
+import 'package:frontend/features/tracker/presentation/state/categories_provider.dart';
+import 'package:frontend/features/tracker/presentation/state/entries_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/passthrough_enabled_notifier.dart';
 import 'package:frontend/features/tracker/presentation/state/report_notifier.dart';
 import 'package:frontend/features/tracker/presentation/widgets/balance_view.dart';
@@ -71,8 +73,11 @@ class HomeShell extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final month = ref.watch(reportProvider);
-    final balance = ref.watch(balanceProvider(month)).value;
+    final balance = ref.watch(balanceProvider(month));
     final tab = useState(0);
+
+    final categories = ref.watch(categoriesProvider);
+    final entries = ref.watch(entriesProvider);
 
 
 
@@ -105,7 +110,7 @@ class HomeShell extends HookConsumerWidget {
     }, []);
     return Scaffold(
       backgroundColor: FluentTheme.of(context).scaffoldBackgroundColor,
-      floatingActionButton: balance?.incomes == 0.0
+      floatingActionButton: balance.value?.incomes == 0.0
           ? PrimaryButton(onPressed: () {}, label: LocaleKeys.add_income.tr())
           : const SizedBox(),
       extendBody: true,
@@ -128,36 +133,47 @@ class HomeShell extends HookConsumerWidget {
         currentIndex: tab.value,
         onTap: (i) => tab.value = i,
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 840),
-          child: AnimatedIndexedStack(
-            index: tab.value,
-            children: [
-              Stack(
-                alignment: Alignment.topCenter,
-                // spacing: 32,
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 840),
+              child: AnimatedIndexedStack(
+                index: tab.value,
                 children: [
-                  const Positioned(
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    child: BalanceView(),
+                  Stack(
+                    alignment: Alignment.topCenter,
+                    // spacing: 32,
+                    children: [
+                      const Positioned(
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        child: BalanceView(),
+                      ),
+                      Positioned.fill(
+                        child: PassthroughContainer(
+                          topPassThroughHeight: balanceHeight,
+                          enabled: ref.watch(passThroughEnabledProvider),
+                          child: const EntriesView(),
+                        ),
+                      ), // Custom scroll view with sizedbox of height BalanceView
+                    ],
                   ),
-                  Positioned.fill(
-                    child: PassthroughContainer(
-                      topPassThroughHeight: balanceHeight,
-                      enabled: ref.watch(passThroughEnabledProvider),
-                      child: const EntriesView(),
-                    ),
-                  ), // Custom scroll view with sizedbox of height BalanceView
+                  const StatsScreen(),
+                  const SettingsScreen(),
                 ],
               ),
-              const StatsScreen(),
-              const SettingsScreen(),
-            ],
+            ),
           ),
-        ),
+
+          if ((balance.isLoading ||
+                  categories.isLoading ||
+                  entries.isLoading) ||
+              balance.value == null)
+            const Center(child: CircularProgressIndicator()),
+        ],
       ),
     );
   }

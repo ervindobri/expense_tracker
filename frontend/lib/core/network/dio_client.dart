@@ -7,18 +7,20 @@ part 'dio_client.g.dart';
 
 /// Override with --dart-define=API_BASE_URL=https://host/api/ when the API
 /// is not same-origin (web) or not on localhost (desktop/mobile dev).
-const _apiBaseUrl = 
-// 'https://expense-tracker.tail0b146d.ts.net/api/' ?? 
-String.fromEnvironment(
-  'API_BASE_URL',
-  // on web the app is served from the same host as the API, so a relative
-  // URL works everywhere the frontend is deployed
-  defaultValue: kIsWeb && !kDebugMode ? '/api/' : 'http://127.0.0.1:8000/api/',
-);
+const _apiBaseUrl =
+    // 'https://expense-tracker.tail0b146d.ts.net/api/' ??
+    String.fromEnvironment(
+      'API_BASE_URL',
+      // on web the app is served from the same host as the API, so a relative
+      // URL works everywhere the frontend is deployed
+      defaultValue: kIsWeb && !kDebugMode
+          ? '/api/'
+          : 'http://127.0.0.1:8000/api/',
+    );
 
 @riverpod
 Dio dioClient(Ref ref) {
-  const url = !kIsWeb
+  const url = kDebugMode || !kIsWeb
       ? 'https://expense-tracker.tail0b146d.ts.net/api/'
       : _apiBaseUrl;
   return Dio(BaseOptions(baseUrl: url));

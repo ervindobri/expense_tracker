@@ -26,5 +26,9 @@
   "no_entries_message": "Ehhez a kategóriához még nem lett bejegyzés hozzáadva.\nAdj hozzá kiadásokat/bevételeket a megjelenítéshez.",
   "future_week_notice": "Jövőbeli hetet szerkesztesz.",
   "add_expense": "Kiadás hozzáadása",
-  "add_income_action": "Bevétel hozzáadása"
+  "add_income_action": "Bevétel hozzáadása",
+  "loading_data": "Adatok betöltése…",
+  "something_went_wrong": "Valami hiba történt",
+  "retry": "Újra",
+  "settings": "Beállítások"
 }

@@ -258,12 +258,22 @@ class _TabButton extends StatelessWidget {
                     size: 24,
                     color: selected ? activeColor : inactiveColor,
                   ),
-                  Text(
-                    item.label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: selected ? FontWeight.w600 : FontWeight.w300,
-                      color: selected ? activeColor : inactiveColor,
+                  // Shrinks instead of overflowing when the label doesn't
+                  // fit the bar's fixed height (large text scales, wide
+                  // translations).
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        item.label,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: selected
+                              ? FontWeight.w600
+                              : FontWeight.w300,
+                          color: selected ? activeColor : inactiveColor,
+                        ),
+                      ),
                     ),
                   ),
                 ],

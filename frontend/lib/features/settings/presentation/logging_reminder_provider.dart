@@ -79,20 +79,43 @@ class LoggingReminder extends Notifier<ReminderFrequency> {
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
-    await _plugin.initialize(
-      settings: const InitializationSettings(iOS: iosSettings),
-    );
+    try {
+      await _plugin.initialize(
+        // macOS needs its own settings object, otherwise the plugin throws
+        // "macOS settings must be set when targeting macOS platform".
+        settings: const InitializationSettings(
+          iOS: iosSettings,
+          macOS: iosSettings,
+        ),
+      );
+    } catch (e) {
+      // Notifications simply stay unavailable on platforms the plugin can't
+      // initialize on; this must never take the app down at startup.
+      if (kDebugMode) {
+        print('Local notifications unavailable: $e');
+      }
+    }
   }
 
   Future<bool> _requestPermissions() async {
     final ios = _plugin.resolvePlatformSpecificImplementation<
         IOSFlutterLocalNotificationsPlugin>();
-    final granted = await ios?.requestPermissions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
-    return granted ?? false;
+    if (ios != null) {
+      return await ios.requestPermissions(
+            alert: true,
+            badge: true,
+            sound: true,
+          ) ??
+          false;
+    }
+    final macOS = _plugin.resolvePlatformSpecificImplementation<
+        MacOSFlutterLocalNotificationsPlugin>();
+    return await macOS?.requestPermissions(
+          alert: true,
+          badge: true,
+          sound: true,
+        ) ??
+        false;
   }
 
   /// Schedules (or cancels) the logging reminder to match [frequency] and

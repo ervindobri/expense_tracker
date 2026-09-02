@@ -26,5 +26,9 @@
   "no_entries_message": "There are no entries added to this category yet.\nAdd expenses/incomes to show entries.",
   "future_week_notice": "You are editing a future week.",
   "add_expense": "Add expense",
-  "add_income_action": "Add income"
+  "add_income_action": "Add income",
+  "loading_data": "Loading your data…",
+  "something_went_wrong": "Something went wrong",
+  "retry": "Retry",
+  "settings": "Settings"
 }

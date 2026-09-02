@@ -419,8 +419,8 @@ class EntriesView extends HookConsumerWidget {
                                           entries
                                                   .value
                                                   ?.lastCreated
-                                                  .formatDayShort ??
-                                              '',
+                                                  ?.formatDayShort ??
+                                              '-',
                                         ),
                                       ],
                                     ),
@@ -472,7 +472,6 @@ class EntriesView extends HookConsumerWidget {
                               selectedType.value = val;
                             },
                           ),
-
                           DefaultTextStyle(
                             style: Theme.of(context).textTheme.bodySmall!
                                 .copyWith(

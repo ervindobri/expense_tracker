@@ -66,9 +66,11 @@ class EntriesList {
   final int total;
   final List<Entry> items;
 
-  DateTime get lastCreated => items
-      .reduce((a, b) => a.createdDate.isAfter(b.createdDate) ? a : b)
-      .addedDate;
+  DateTime? get lastCreated => items.isEmpty
+      ? null
+      : items
+            .reduce((a, b) => a.createdDate.isAfter(b.createdDate) ? a : b)
+            .addedDate;
 
   SplayTreeMap<DateTime, List<Entry>> get grouped {
     final groupedItems = groupBy(items, (Entry e) {
@@ -95,5 +97,4 @@ class Balance {
   final double expenses;
   final double incomes;
   double get savings => incomes - expenses;
-
 }

@@ -28,6 +28,9 @@ class LocaleKeys {
   static const future_week_notice = 'future_week_notice';
   static const add_expense = 'add_expense';
   static const add_income_action = 'add_income_action';
+  static const loading_data = 'loading_data';
+  static const something_went_wrong = 'something_went_wrong';
+  static const retry = 'retry';
   static const String historyLabel = 'history';
   static const String nowLabel = 'now';
   static const String selectMonthLabel = 'select_month';

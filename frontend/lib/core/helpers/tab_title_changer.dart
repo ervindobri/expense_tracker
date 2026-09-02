@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:web/web.dart' as web;
 
 class TabTitleReminder {
   static const _defaultTitle = 'Expense Tracker';
@@ -10,24 +9,30 @@ class TabTitleReminder {
   Timer? _timer;
 
   void start() {
-    if (!kIsWeb) {
-      return;
-    }
     _updateTitle(); // set immediately on startup
     _timer = Timer.periodic(const Duration(minutes: 1), (_) => _updateTitle());
   }
 
   void _updateTitle() {
     final hour = DateTime.now().hour;
-    web.document.title = hour >= 19 ? _reminderTitle : _defaultTitle;
+    _setTitle(hour >= 19 ? _reminderTitle : _defaultTitle);
   }
 
-  void debugChange(){
-    web.document.title = 'Hello, test title!';
+  void debugChange() => _setTitle('Hello, test title!');
+
+  /// Works on every platform: on web this updates the browser tab title, on
+  /// desktop/mobile the application switcher label.
+  void _setTitle(String title) {
+    unawaited(
+      SystemChrome.setApplicationSwitcherDescription(
+        ApplicationSwitcherDescription(label: title),
+      ),
+    );
   }
 
   void dispose() => _timer?.cancel();
 }
 
-
-final tabTitleChangerProvider = Provider<TabTitleReminder> ((_) => TabTitleReminder());
+final tabTitleChangerProvider = Provider<TabTitleReminder>(
+  (_) => TabTitleReminder(),
+);

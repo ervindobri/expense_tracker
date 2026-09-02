@@ -13,20 +13,16 @@ import 'package:frontend/core/network/internet_connection_provider.dart';
 import 'package:frontend/core/storage/shared_prefs_provider.dart';
 import 'package:frontend/core/widgets/animated_indexed_stack.dart';
 import 'package:frontend/core/widgets/liquid_tabbar.dart';
-import 'package:frontend/core/widgets/pass_through.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/features/settings/presentation/settings_screen.dart';
 import 'package:frontend/features/stats/presentation/stats_screen.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/categories_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/entries_provider.dart';
-import 'package:frontend/features/tracker/presentation/state/passthrough_enabled_notifier.dart';
 import 'package:frontend/features/tracker/presentation/state/report_notifier.dart';
-import 'package:frontend/features/tracker/presentation/widgets/balance_view.dart';
-import 'package:frontend/features/tracker/presentation/widgets/entries_view.dart';
+import 'package:frontend/features/tracker/presentation/widgets/home_screen.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-
 
 class MyCustomScrollBehavior extends MaterialScrollBehavior {
   const MyCustomScrollBehavior();
@@ -38,6 +34,7 @@ class MyCustomScrollBehavior extends MaterialScrollBehavior {
     // etc.
   };
 }
+
 class App extends ConsumerWidget {
   const App({super.key});
 
@@ -78,13 +75,29 @@ class HomeShell extends HookConsumerWidget {
 
     final categories = ref.watch(categoriesProvider);
     final entries = ref.watch(entriesProvider);
+    final monthlyEntries = ref.watch(monthlyEntriesProvider);
 
-
+    // Every async source the screens below read from. The UI is only built
+    // once all of them carry data, so no screen has to render a half-loaded
+    // state.
+    final sources = <AsyncValue<Object?>>[
+      categories,
+      entries,
+      monthlyEntries,
+      balance,
+    ];
+    final isReady =
+        entries.value != null ||
+        sources.every((AsyncValue<Object?> s) => s.hasValue);
+    final Object? loadError = sources
+        .where((AsyncValue<Object?> s) => s.hasError)
+        .firstOrNull
+        ?.error;
 
     if (!kIsWeb) {
       // trigger rebuild
       ref.watch(sharedPrefsProvider);
-    
+
       ref.watch(internetConnectionProvider);
 
       ref.listen<InternetConnectionStatus>(internetConnectionProvider, (
@@ -110,7 +123,7 @@ class HomeShell extends HookConsumerWidget {
     }, []);
     return Scaffold(
       backgroundColor: FluentTheme.of(context).scaffoldBackgroundColor,
-      floatingActionButton: balance.value?.incomes == 0.0
+      floatingActionButton: isReady && balance.value?.incomes == 0.0
           ? PrimaryButton(onPressed: () {}, label: LocaleKeys.add_income.tr())
           : const SizedBox(),
       extendBody: true,
@@ -133,47 +146,73 @@ class HomeShell extends HookConsumerWidget {
         currentIndex: tab.value,
         onTap: (i) => tab.value = i,
       ),
-      body: Stack(
-        alignment: Alignment.center,
-        children: [
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 840),
-              child: AnimatedIndexedStack(
-                index: tab.value,
-                children: [
-                  Stack(
-                    alignment: Alignment.topCenter,
-                    // spacing: 32,
-                    children: [
-                      const Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        child: BalanceView(),
-                      ),
-                      Positioned.fill(
-                        child: PassthroughContainer(
-                          topPassThroughHeight: balanceHeight,
-                          enabled: ref.watch(passThroughEnabledProvider),
-                          child: const EntriesView(),
-                        ),
-                      ), // Custom scroll view with sizedbox of height BalanceView
-                    ],
-                  ),
-                  const StatsScreen(),
-                  const SettingsScreen(),
-                ],
-              ),
+      body: switch ((isReady: isReady, error: loadError)) {
+        (isReady: false, error: final Object error?) => _LoadStateView(
+          message: LocaleKeys.something_went_wrong.tr(),
+          detail: error.toString(),
+          onRetry: () {
+            ref
+              ..invalidate(categoriesProvider)
+              ..invalidate(entriesProvider);
+          },
+        ),
+        (isReady: false, error: _) => _LoadStateView(
+          message: LocaleKeys.loading_data.tr(),
+        ),
+        _ => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 840),
+            child: AnimatedIndexedStack(
+              index: tab.value,
+              children: const [HomeScreen(), StatsScreen(), SettingsScreen()],
             ),
           ),
+        ),
+      },
+    );
+  }
+}
 
-          if ((balance.isLoading ||
-                  categories.isLoading ||
-                  entries.isLoading) ||
-              balance.value == null)
-            const Center(child: CircularProgressIndicator()),
-        ],
+/// Full-screen placeholder shown while the initial data loads, or when that
+/// load failed.
+class _LoadStateView extends StatelessWidget {
+  const _LoadStateView({required this.message, this.detail, this.onRetry});
+
+  final String message;
+  final String? detail;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final TextTheme textTheme = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          spacing: 16,
+          children: [
+            if (onRetry == null)
+              const SizedBox.square(dimension: 32, child: ProgressRing())
+            else
+              Icon(
+                LucideIcons.circleAlert,
+                size: 32,
+                color: FluentTheme.of(context).accentColor,
+              ),
+            Text(message, style: textTheme.titleMedium),
+            if (detail != null)
+              Text(
+                detail!,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.bodySmall,
+              ),
+            if (onRetry != null)
+              PrimaryButton(onPressed: onRetry!, label: LocaleKeys.retry.tr()),
+          ],
+        ),
       ),
     );
   }

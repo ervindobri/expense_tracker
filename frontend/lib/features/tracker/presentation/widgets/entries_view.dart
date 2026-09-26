@@ -83,6 +83,8 @@ class EntriesView extends HookConsumerWidget {
 
     final viewType = useState(EntriesViewType.table);
 
+    final deselectedCategories = useState<List<Category>>(const []);
+
     useEffect(() {
       void listener() {
         scrolled.value = parentController.offset.abs();
@@ -556,10 +558,62 @@ class EntriesView extends HookConsumerWidget {
                                           ),
                                     ) ??
                                     [];
-                                final weeklyTotal = weeklyEntries.fold<double>(
-                                  0.0,
-                                  (prod, entry) => prod + entry.amount,
-                                );
+                                final weeklyTotal =
+                                    weeklyEntries.fold<double>(
+                                      0.0,
+                                      (prod, entry) => prod + entry.amount,
+                                    ) -
+                                    deselectedCategories.value.fold(0.0, (
+                                      a,
+                                      b,
+                                    ) {
+                                      final List<Entry>? entriesForCatWeek =
+                                          entries.value?.items
+                                              .where(
+                                                (e) => isTotal.value
+                                                    ? e.category == b.id
+                                                    : e.category == b.id &&
+                                                          (e.addedDate.isDayAfterOrSame(
+                                                                firstDayOfMonth
+                                                                    .copyWith(
+                                                                      day: weeklimits
+                                                                          .$1,
+                                                                    ),
+                                                              ) &&
+                                                              e.addedDate.isDayBeforeOrsame(
+                                                                firstDayOfMonth.copyWith(
+                                                                  month:
+                                                                      week.value ==
+                                                                              5 ||
+                                                                          week.value ==
+                                                                              6
+                                                                      ? month +
+                                                                            1
+                                                                      : month,
+                                                                  day:
+                                                                      week.value ==
+                                                                              5 ||
+                                                                          week.value ==
+                                                                              6
+                                                                      ? 0
+                                                                      : weeklimits
+                                                                            .$2,
+                                                                  hour: 23,
+                                                                  minute: 59,
+                                                                  second: 59,
+                                                                ),
+                                                              )),
+                                              )
+                                              .toList() ??
+                                          <Entry>[];
+                                      final double totalForCategory =
+                                          entriesForCatWeek!.fold<double>(
+                                            0.0,
+                                            (curre, Entry b) =>
+                                                curre + b.amount,
+                                          );
+                                      return a + totalForCategory;
+                                    });
                                 final isExpense =
                                     selectedType.value == CategoryType.expense;
                                 return Column(
@@ -664,110 +718,140 @@ class EntriesView extends HookConsumerWidget {
                                                         (curre, Entry b) =>
                                                             curre + b.amount,
                                                       );
-                                              return InkWell(
-                                                splashColor: Colors.transparent,
-                                                borderRadius:
-                                                    BorderRadius.circular(32),
-                                                onTap: () async {
-                                                  unawaited(
-                                                    HapticFeedback.selectionClick(),
-                                                  );
-                                                  final edited = ValueNotifier(
-                                                    false,
-                                                  );
-                                                  if (kIsWeb) {
-                                                    await showDialog(
-                                                      context: context,
-                                                      builder: (_) {
-                                                        return Dialog(
-                                                          backgroundColor:
-                                                              Colors
-                                                                  .transparent,
-                                                          constraints:
-                                                              const BoxConstraints(
-                                                                maxWidth: 540,
-                                                              ),
-                                                          child: EntrySheet(
-                                                            week: week.value,
-                                                            category: cat,
-                                                            entries:
-                                                                entriesForCatWeek,
-                                                            onEdited: (value) {
-                                                              edited.value =
-                                                                  value;
-                                                            },
-                                                          ),
-                                                        );
-                                                      },
+                                              return Opacity(
+                                                opacity:
+                                                    deselectedCategories.value
+                                                        .contains(cat)
+                                                    ? 0.5
+                                                    : 1.0,
+                                                child: InkWell(
+                                                  splashColor:
+                                                      Colors.transparent,
+                                                  borderRadius:
+                                                      BorderRadius.circular(32),
+                                                  onLongPress: () {
+                                                    if (deselectedCategories
+                                                        .value
+                                                        .contains(cat)) {
+                                                      final categories =
+                                                          List<Category>.from(
+                                                            deselectedCategories
+                                                                .value,
+                                                          );
+                                                      categories.remove(cat);
+                                                      deselectedCategories
+                                                              .value =
+                                                          categories;
+                                                      return;
+                                                    }
+                                                    deselectedCategories
+                                                        .value = [
+                                                      ...deselectedCategories
+                                                          .value,
+                                                      cat,
+                                                    ];
+                                                    print('deselect');
+                                                  },
+                                                  onTap: () async {
+                                                    unawaited(
+                                                      HapticFeedback.selectionClick(),
                                                     );
-                                                  } else {
-                                                    await showModalBottomSheet(
-                                                      context: context,
-                                                      isScrollControlled: true,
-                                                      backgroundColor:
-                                                          Colors.transparent,
-                                                      builder: (_) => EntrySheet(
-                                                        week: week.value,
-                                                        category: cat,
-                                                        entries:
-                                                            entriesForCatWeek,
-                                                        onEdited: (value) {
-                                                          edited.value = value;
+                                                    final edited =
+                                                        ValueNotifier(false);
+                                                    if (kIsWeb) {
+                                                      await showDialog(
+                                                        context: context,
+                                                        builder: (_) {
+                                                          return Dialog(
+                                                            backgroundColor:
+                                                                Colors
+                                                                    .transparent,
+                                                            constraints:
+                                                                const BoxConstraints(
+                                                                  maxWidth: 540,
+                                                                ),
+                                                            child: EntrySheet(
+                                                              week: week.value,
+                                                              category: cat,
+                                                              entries:
+                                                                  entriesForCatWeek,
+                                                              onEdited: (value) {
+                                                                edited.value =
+                                                                    value;
+                                                              },
+                                                            ),
+                                                          );
                                                         },
-                                                      ),
-                                                    );
-                                                  }
+                                                      );
+                                                    } else {
+                                                      await showModalBottomSheet(
+                                                        context: context,
+                                                        isScrollControlled:
+                                                            true,
+                                                        backgroundColor:
+                                                            Colors.transparent,
+                                                        builder: (_) => EntrySheet(
+                                                          week: week.value,
+                                                          category: cat,
+                                                          entries:
+                                                              entriesForCatWeek,
+                                                          onEdited: (value) {
+                                                            edited.value =
+                                                                value;
+                                                          },
+                                                        ),
+                                                      );
+                                                    }
 
-                                                  if (edited.value) {
-                                                    ref.invalidate(
-                                                      entriesProvider,
-                                                    );
-                                                  }
-                                                },
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        vertical: 12.0,
-                                                        horizontal: 12.0,
-                                                      ),
-                                                  child: SizedBox(
-                                                    height: 24,
-                                                    child: Center(
-                                                      child: Row(
-                                                        mainAxisAlignment:
-                                                            MainAxisAlignment
-                                                                .spaceBetween,
-                                                        children: <Widget>[
-                                                          Text(cat.name),
-                                                          NumberFlow(
-                                                            value: ref
-                                                                .convertedAmount(
-                                                                  totalForCategory,
-                                                                ),
-                                                            continuous: true,
-                                                            prefix:
-                                                                totalForCategory <=
-                                                                    0
-                                                                ? null
-                                                                : isExpense
-                                                                ? '-'
-                                                                : '+',
-                                                            locale: context
-                                                                .locale
-                                                                .languageCode,
+                                                    if (edited.value) {
+                                                      ref.invalidate(
+                                                        entriesProvider,
+                                                      );
+                                                    }
+                                                  },
+                                                  child: Padding(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          vertical: 12.0,
+                                                          horizontal: 12.0,
+                                                        ),
+                                                    child: SizedBox(
+                                                      height: 24,
+                                                      child: Center(
+                                                        child: Row(
+                                                          mainAxisAlignment:
+                                                              MainAxisAlignment
+                                                                  .spaceBetween,
+                                                          children: <Widget>[
+                                                            Text(cat.name),
+                                                            NumberFlow(
+                                                              value: ref
+                                                                  .convertedAmount(
+                                                                    totalForCategory,
+                                                                  ),
+                                                              continuous: true,
+                                                              prefix:
+                                                                  totalForCategory <=
+                                                                      0
+                                                                  ? null
+                                                                  : isExpense
+                                                                  ? '-'
+                                                                  : '+',
+                                                              locale: context
+                                                                  .locale
+                                                                  .languageCode,
 
-                                                            format:
-                                                                const NumberFlowFormat.currency(
-                                                                  maxFraction:
-                                                                      2,
+                                                              format: const NumberFlowFormat.currency(
+                                                                maxFraction: 2,
 
-                                                                  sign: SignDisplay
-                                                                      .negative,
-                                                                  currencyCode:
-                                                                      '',
-                                                                ),
-                                                          ),
-                                                        ],
+                                                                sign: SignDisplay
+                                                                    .negative,
+                                                                currencyCode:
+                                                                    '',
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
                                                       ),
                                                     ),
                                                   ),

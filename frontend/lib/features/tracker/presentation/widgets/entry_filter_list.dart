@@ -99,6 +99,13 @@ class _FilterChipListState<T> extends State<FilterChipList<T>> {
   @override
   void didUpdateWidget(covariant FilterChipList<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Pick up in-place edits (e.g. an entry whose amount changed).
+    final shared = widget.initialList.length < _filters.length
+        ? widget.initialList.length
+        : _filters.length;
+    for (var i = 0; i < shared; i++) {
+      _filters[i] = widget.initialList[i];
+    }
     if (widget.initialList.length > _filters.length) {
       // Only the items that are actually new, in order.
       final newItems = widget.initialList.sublist(_filters.length);

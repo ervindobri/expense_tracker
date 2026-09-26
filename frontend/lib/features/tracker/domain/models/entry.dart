@@ -40,10 +40,10 @@ class Entry {
     };
   }
 
-  Entry copyWith({int? id, String? notes}) {
+  Entry copyWith({int? id, double? amount, String? notes}) {
     return Entry(
       id: id ?? this.id,
-      amount: amount,
+      amount: amount ?? this.amount,
       addedDate: addedDate,
       category: category,
       notes: notes ?? this.notes,

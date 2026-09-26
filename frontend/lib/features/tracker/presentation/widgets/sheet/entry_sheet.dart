@@ -28,8 +28,8 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:number_flow_flutter/number_flow_flutter.dart';
 import 'package:toastification/toastification.dart';
 
-
 typedef BoolCallback = void Function(bool);
+
 class EntrySheet extends HookConsumerWidget {
   const EntrySheet({
     super.key,
@@ -163,6 +163,12 @@ class EntrySheet extends HookConsumerWidget {
                           key: const ValueKey(2),
                           lastEditedEntry: lastEditedEntry,
                           selectedEntry: selectedEntry,
+                          onSaved: (updated) {
+                            stateEntries.value = [
+                              for (final e in stateEntries.value)
+                                e.id == updated.id ? updated : e,
+                            ];
+                          },
                         ),
                       ),
                 SizedBox(height: keyboardHeight),
@@ -174,7 +180,6 @@ class EntrySheet extends HookConsumerWidget {
     );
   }
 }
-
 
 class SingleEntrySheet extends HookWidget {
   const SingleEntrySheet({super.key, required this.entry});
@@ -254,27 +259,83 @@ class EditEntryView extends HookWidget {
     required this.lastEditedEntry,
     required this.selectedEntry,
     this.back = true,
+    this.onSaved,
   });
   final ValueNotifier<Entry?> lastEditedEntry;
   final ValueNotifier<Entry?> selectedEntry;
   final bool back;
+  final ValueChanged<Entry>? onSaved;
 
   @override
   Widget build(BuildContext context) {
     final notesController = useTextEditingController();
-    final text = useState(notesController.text);
+    final amountController = useTextEditingController();
+    final isSaving = useState(false);
+    // Rebuild on typing so the notes clear button and amount validity update.
+    useListenable(notesController);
+    useListenable(amountController);
     final theme = FluentTheme.of(context);
+    final textTheme = Theme.of(context).textTheme;
     useEffect(() {
-      if (lastEditedEntry.value?.notes.isNotEmpty ?? false) {
-        notesController.text = lastEditedEntry.value!.notes;
+      final entry = lastEditedEntry.value;
+      if (entry != null) {
+        notesController.text = entry.notes;
+        amountController.text = entry.amount == entry.amount.truncateToDouble()
+            ? entry.amount.toInt().toString()
+            : entry.amount.toStringAsFixed(2);
       }
-      void listener() {
-        text.value = notesController.text;
-      }
-
-      notesController.addListener(listener);
-      return () => notesController.removeListener(listener);
+      return null;
     }, [lastEditedEntry.value]);
+
+    final parsedAmount = amountController.text.parseHungarianDecimal;
+    final isAmountValid = parsedAmount != null && parsedAmount > 0;
+
+    Future<void> save(WidgetRef ref) async {
+      final entry = lastEditedEntry.value;
+      if (entry == null || isSaving.value) {
+        return;
+      }
+      if (!isAmountValid) {
+        unawaited(HapticFeedback.heavyImpact());
+        return;
+      }
+      isSaving.value = true;
+      try {
+        final updatedEntry = entry.copyWith(
+          amount: parsedAmount,
+          notes: notesController.text,
+        );
+        await ref.read(entryRepositoryProvider).updateEntry(updatedEntry);
+        lastEditedEntry.value = updatedEntry;
+        onSaved?.call(updatedEntry);
+        unawaited(HapticFeedback.lightImpact());
+        if (!context.mounted) {
+          return;
+        }
+        if (back) {
+          selectedEntry.value = null;
+        } else {
+          Navigator.pop(context, updatedEntry);
+        }
+      } catch (e, s) {
+        if (kDebugMode) {
+          print('$e, stackTrace: $s');
+        }
+        toastification.show(
+          title: Text(
+            LocaleKeys.error_updating_entry.tr(
+              namedArgs: {'error': e.toString()},
+            ),
+          ),
+          type: ToastificationType.error,
+        );
+      } finally {
+        if (context.mounted) {
+          isSaving.value = false;
+        }
+      }
+    }
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       spacing: 12,
@@ -294,11 +355,39 @@ class EditEntryView extends HookWidget {
                       spacing: 8,
                       children: [
                         const Icon(LucideIcons.dollarSign),
-                        Text(
-                          lastEditedEntry.value!.amount.formatCurrencySymbol(
-                            showDecimals: true,
+                        // Fixed height: the parent HeightCrossFade sizes via
+                        // IntrinsicHeight, which underestimates a dense
+                        // TextField and causes an overflow.
+                        Expanded(
+                          child: SizedBox(
+                            height: 32,
+                            child: TextField(
+                              controller: amountController,
+                              textAlignVertical: TextAlignVertical.center,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              inputFormatters: [
+                                const LeadingZeroInputFormatter(),
+                                DecimalInputFormatter(decimalPlaces: 2),
+                              ],
+                              style: textTheme.titleMedium?.copyWith(
+                                color: isAmountValid
+                                    ? null
+                                    : Theme.of(context).colorScheme.error,
+                              ),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                                hintText: '0.00',
+                              ),
+                            ),
                           ),
                         ),
+                        Text(LocaleKeys.ft.tr(), style: textTheme.titleMedium),
+                        const Icon(LucideIcons.pencil, size: 16),
                       ],
                     ),
                     Divider(color: theme.dividerColor),
@@ -351,39 +440,7 @@ class EditEntryView extends HookWidget {
               child: Consumer(
                 builder: (context, ref, _) {
                   return PrimaryButton(
-                    onPressed: () {
-                      try {
-                        final entry = lastEditedEntry.value;
-                        if (entry != null) {
-                          final updatedEntry = entry.copyWith(
-                            notes: notesController.text,
-                          );
-                          ref
-                              .read(entryRepositoryProvider)
-                              .updateEntry(
-                                updatedEntry
-                              );
-                          if (back) {
-                            selectedEntry.value = null;
-                          } else {
-                            Navigator.pop(context, updatedEntry);
-                          }
-                          unawaited(HapticFeedback.lightImpact());
-                        }
-                      } catch (e, s) {
-                        if (kDebugMode) {
-                          print('$e, stackTrace: $s');
-                        }
-                        toastification.show(
-                          title: Text(
-                            LocaleKeys.error_updating_entry.tr(
-                              namedArgs: {'error': e.toString()},
-                            ),
-                          ),
-                          type: ToastificationType.error,
-                        );
-                      }
-                    },
+                    onPressed: () => save(ref),
                     padding: const EdgeInsets.all(12.0),
                     icon: LucideIcons.checkCircle,
                     label: LocaleKeys.save_changes.tr(),
@@ -392,18 +449,18 @@ class EditEntryView extends HookWidget {
               ),
             ),
             if (back)
-            FractionallySizedBox(
-              widthFactor: 1.0,
-              child: SecondaryButton(
-                onPressed: () {
-                  selectedEntry.value = null;
-                },
-                padding: const EdgeInsets.all(12.0),
-                icon: LucideIcons.arrowLeft,
-                outline: false,
-                label: LocaleKeys.back.tr(),
+              FractionallySizedBox(
+                widthFactor: 1.0,
+                child: SecondaryButton(
+                  onPressed: () {
+                    selectedEntry.value = null;
+                  },
+                  padding: const EdgeInsets.all(12.0),
+                  icon: LucideIcons.arrowLeft,
+                  outline: false,
+                  label: LocaleKeys.back.tr(),
+                ),
               ),
-            ),
           ],
         ),
       ],

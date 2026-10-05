@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-class AnimatedIndexedStack extends StatefulWidget { // Distance for the subtle slide (e.g., 0.03 = 3%)
+class AnimatedIndexedStack extends StatefulWidget {
+  // Distance for the subtle slide (e.g., 0.03 = 3%)
 
   const AnimatedIndexedStack({
     super.key,
@@ -34,7 +36,6 @@ class _AnimatedIndexedStackState extends State<AnimatedIndexedStack>
   void initState() {
     super.initState();
     _currentIndex = widget.index;
-    
 
     _controller = AnimationController(vsync: this, duration: widget.duration);
 
@@ -51,11 +52,15 @@ class _AnimatedIndexedStackState extends State<AnimatedIndexedStack>
     ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
 
     _leftSlideAnimation = Tween<Offset>(
-      begin: Offset(-widget.slideOffset, 0.0), // Subtle slide from the right
+      begin: kIsWeb
+          ? Offset(0.0, -widget.slideOffset)
+          : Offset(-widget.slideOffset, 0.0), // Subtle slide from the right
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
     _rightSlideAnimation = Tween<Offset>(
-      begin: Offset(widget.slideOffset, 0.0), // Subtle slide from the right
+      begin: kIsWeb
+          ? Offset(0.0, widget.slideOffset)
+          : Offset(widget.slideOffset, 0.0), // Subtle slide from the right
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: _controller, curve: widget.curve));
   }

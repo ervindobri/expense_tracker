@@ -39,6 +39,7 @@ class LiquidGlassTabBar extends StatefulWidget {
     this.tintColor,
     this.indicatorColor = const Color(0xFF3a3a3a),
     this.blurSigma = 12,
+    this.axis = Axis.horizontal,
   });
   final List<LiquidGlassTabItem> items;
   final int currentIndex;
@@ -60,17 +61,24 @@ class LiquidGlassTabBar extends StatefulWidget {
   /// How strong the frosted blur is.
   final double blurSigma;
 
+  /// Direction the tabs are laid out in. [Axis.vertical] turns the bar into
+  /// a side rail; [height] then becomes the rail's width.
+  final Axis axis;
+
   @override
   State<LiquidGlassTabBar> createState() => _LiquidGlassTabBarState();
 }
 
 class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
+  static const itemWidth = 100.0;
+
   var xPosition = 0.0;
   var selectedIndex = 0;
 
   @override
   void initState() {
     selectedIndex = widget.currentIndex;
+    xPosition = itemWidth * selectedIndex;
     super.initState();
   }
 
@@ -80,14 +88,16 @@ class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
     final isDark = brightness == Brightness.dark;
 
     final double radius = widget.height / 2 + 8;
+    final isVertical = widget.axis == Axis.vertical;
+    final barLength = 101.0 * widget.items.length;
 
     return FittedBox(
       fit: BoxFit.scaleDown,
       child: Padding(
         padding: widget.margin,
         child: SizedBox(
-          height: widget.height,
-          width: 101.0 * widget.items.length,
+          height: isVertical ? barLength : widget.height,
+          width: isVertical ? widget.height : barLength,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(radius),
             child: BackdropFilter(
@@ -113,8 +123,6 @@ class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
                   ),
                   child: Builder(
                     builder: (_) {
-                      const itemWidth =
-                          100.0; //constraints.maxWidth / items.length;
                       const pillInset = 8.0;
                       const pillWidth = itemWidth - pillInset * 2;
                       final pillHeight = widget.height - 14;
@@ -134,14 +142,15 @@ class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
                             xPosition = 0.0;
                             selectedIndex = 0;
                           });
-                          
                         }
                       }
 
                       return GestureDetector(
                         onPanUpdate: (tapInfo) {
                           setState(() {
-                            xPosition += tapInfo.delta.dx;
+                            xPosition += isVertical
+                                ? tapInfo.delta.dy
+                                : tapInfo.delta.dx;
                           });
                         },
                         onPanCancel: () {
@@ -157,10 +166,14 @@ class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
                             AnimatedPositioned(
                               duration: const Duration(milliseconds: 250),
                               curve: Curves.easeOutBack,
-                              left: xPosition + pillInset,
-                              top: (widget.height - pillHeight) / 2,
-                              width: pillWidth,
-                              height: pillHeight,
+                              left: isVertical
+                                  ? (widget.height - pillHeight) / 2
+                                  : xPosition + pillInset,
+                              top: isVertical
+                                  ? xPosition + pillInset
+                                  : (widget.height - pillHeight) / 2,
+                              width: isVertical ? pillHeight : pillWidth,
+                              height: isVertical ? pillWidth : pillHeight,
                               child: Container(
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(
@@ -177,14 +190,16 @@ class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
                               ),
                             ),
                             // Tab buttons.
-                            Row(
+                            Flex(
+                              direction: widget.axis,
                               children: List.generate(widget.items.length, (
                                 index,
                               ) {
                                 final selected = index == selectedIndex;
                                 final item = widget.items[index];
                                 return SizedBox(
-                                  width: itemWidth,
+                                  width: isVertical ? null : itemWidth,
+                                  height: isVertical ? itemWidth : null,
                                   child: _TabButton(
                                     item: item,
                                     selected: selected,

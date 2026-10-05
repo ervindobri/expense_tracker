@@ -218,7 +218,9 @@ class BarChartView extends HookConsumerWidget {
                           alignment: Alignment.center,
                           padding: const EdgeInsets.all(4.0),
                           child: Text(
-                            month.toMonthLabelShort,
+                            kIsWeb
+                                ? month.toMonthLabelMid
+                                : month.toMonthLabelShort,
                             style: selectedMonth.value == month
                                 ? kIsWeb
                                       ? context.bodyMedium?.bold

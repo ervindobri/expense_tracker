@@ -1,3 +1,5 @@
+import 'package:frontend/core/helpers/arithmetic.dart';
+
 extension StringExt on String? {
   String get formatCurrency {
     return CurrencyFormatter.format(num.tryParse(this ?? '') ?? 0.0);
@@ -12,6 +14,16 @@ extension StringExt on String? {
         ) // strip non-breaking spaces too, if you used them earlier
         .replaceAll(',', '.');
     return double.tryParse(normalized ?? '');
+  }
+
+  /// Parses an amount field's text, evaluating it first if it is still an
+  /// arithmetic expression (e.g. submitted before auto-evaluation kicked in).
+  double? get parseAmount {
+    final text = this ?? '';
+    if (isArithmeticExpression(text)) {
+      return evaluateArithmetic(text);
+    }
+    return text.parseHungarianDecimal;
   }
 }
 
@@ -54,7 +66,6 @@ extension NumExt on num {
 }
 
 extension IntExt on int {
-
   String get toMonthLabel => switch (this) {
     1 => 'January',
     2 => 'February',
@@ -87,17 +98,33 @@ extension IntExt on int {
     _ => toString().substring(0, 1),
   };
 
-    (int first, int last) get weekLimits {
+  String get toMonthLabelMid => switch (this) {
+    1 => 'JAN',
+    2 => 'FEB',
+    3 => 'MAR',
+    4 => 'APR',
+    5 => 'MAY',
+    6 => 'JUN',
+    7 => 'JUL',
+    8 => 'AUG',
+    9 => 'SEP',
+    10 => 'OCT',
+    11 => 'NOV',
+    12 => 'DEC',
+    _ => toString().substring(0, 3),
+  };
+
+  (int first, int last) get weekLimits {
     return switch (this) {
       1 => (1, 6),
       2 => (7, 13),
       3 => (14, 20),
       4 => (21, 27),
-      5 => (28, 31), // some months have until 30 only (except February)
+      5 => (28, 30), // some months have until 30 only (except February)
       _ => (1, 31),
     };
   }
-  
+
   String get formatCurrency {
     return CurrencyFormatter.format(this, symbol: 'Ft');
   }
@@ -106,7 +133,6 @@ extension IntExt on int {
     return CurrencyFormatter.format(this, showSymbol: true, symbol: 'Ft');
   }
 }
-
 
 extension DateTimeExt on DateTime {
   // limits: 1-6, 7-13, 14-20, 21-27, 2
@@ -120,7 +146,6 @@ extension DateTimeExt on DateTime {
       ? 4
       : 5;
 }
-
 
 // ignore: avoid_classes_with_only_static_members
 class CurrencyFormatter {

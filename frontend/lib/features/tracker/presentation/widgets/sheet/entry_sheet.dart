@@ -11,6 +11,7 @@ import 'package:frontend/core/extensions/build_context.dart';
 import 'package:frontend/core/extensions/date_time.dart';
 import 'package:frontend/core/extensions/string.dart';
 import 'package:frontend/core/extensions/text_style.dart';
+import 'package:frontend/core/helpers/arithmetic.dart';
 import 'package:frontend/core/helpers/formatters.dart';
 import 'package:frontend/core/helpers/toastification_service.dart';
 import 'package:frontend/core/localization/locale_keys.dart';
@@ -274,6 +275,10 @@ class EditEntryView extends HookWidget {
     // Rebuild on typing so the notes clear button and amount validity update.
     useListenable(notesController);
     useListenable(amountController);
+    useArithmeticEvaluation(
+      amountController,
+      enabled: supportsInlineArithmetic,
+    );
     final theme = FluentTheme.of(context);
     final textTheme = Theme.of(context).textTheme;
     useEffect(() {
@@ -287,7 +292,7 @@ class EditEntryView extends HookWidget {
       return null;
     }, [lastEditedEntry.value]);
 
-    final parsedAmount = amountController.text.parseHungarianDecimal;
+    final parsedAmount = amountController.text.parseAmount;
     final isAmountValid = parsedAmount != null && parsedAmount > 0;
 
     Future<void> save(WidgetRef ref) async {
@@ -368,10 +373,12 @@ class EditEntryView extends HookWidget {
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
                                   ),
-                              inputFormatters: [
-                                const LeadingZeroInputFormatter(),
-                                DecimalInputFormatter(decimalPlaces: 2),
-                              ],
+                              inputFormatters: supportsInlineArithmetic
+                                  ? [ArithmeticInputFormatter(decimalPlaces: 2)]
+                                  : [
+                                      const LeadingZeroInputFormatter(),
+                                      DecimalInputFormatter(decimalPlaces: 2),
+                                    ],
                               style: textTheme.titleMedium?.copyWith(
                                 color: isAmountValid
                                     ? null
@@ -497,23 +504,29 @@ class EntryTotalView extends HookConsumerWidget {
 
     final amountController = useTextEditingController();
     final amountField = useFocusNode();
+    useArithmeticEvaluation(
+      amountController,
+      enabled: supportsInlineArithmetic,
+    );
 
     Future<void> submitEntry() async {
       //Save entry
       try {
-        final amount = amountController.text.parseHungarianDecimal;
+        final amount = amountController.text.parseAmount;
         if (amount != null && week != null) {
           final month = ref.read(reportProvider);
+          final lastDayOfMonth = DateTime(now.year, month + 1, 0);
+          final dayLimit = week! < 5 ? week!.weekLimits.$2 : lastDayOfMonth.day;
           final entryDate =
               month != currentMonth ||
                   week! < currentWeek ||
                   week! > currentWeek
               ? now.copyWith(
                   month: month,
-                  day: week!.weekLimits.$2,
-                  hour: 12,
-                  minute: 0,
-                  second: 0,
+                  day: dayLimit,
+                  hour: now.hour,
+                  minute: now.minute,
+                  second: now.second,
                 )
               : now;
           final entry = Entry(
@@ -677,10 +690,12 @@ class EntryTotalView extends HookConsumerWidget {
                       onSubmitted: (value) {
                         submitEntry();
                       },
-                      inputFormatters: [
-                        const LeadingZeroInputFormatter(),
-                        DecimalInputFormatter(decimalPlaces: 2),
-                      ],
+                      inputFormatters: supportsInlineArithmetic
+                          ? [ArithmeticInputFormatter(decimalPlaces: 2)]
+                          : [
+                              const LeadingZeroInputFormatter(),
+                              DecimalInputFormatter(decimalPlaces: 2),
+                            ],
                       controller: amountController,
                       textAlign: TextAlign.center,
                       style: theme.headlineLarge,

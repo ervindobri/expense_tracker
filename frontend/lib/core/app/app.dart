@@ -121,54 +121,70 @@ class HomeShell extends HookConsumerWidget {
       tabTitleReminder.start();
       return () => tabTitleReminder.dispose();
     }, []);
+    // Wide web layouts get a side rail next to the content instead of the
+    // floating bottom bar.
+    final useSideNav = kIsWeb && !isCompactLayout(context);
+    Widget navBar({Axis axis = Axis.horizontal}) => LiquidGlassTabBar(
+      axis: axis,
+      margin: axis == Axis.vertical
+          ? const EdgeInsets.all(16)
+          : const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      indicatorColor: FluentTheme.of(context).indicatorColor,
+      items: [
+        LiquidGlassTabItem(icon: LucideIcons.home, label: LocaleKeys.home.tr()),
+        LiquidGlassTabItem(
+          icon: LucideIcons.chartLine,
+          label: LocaleKeys.stats.tr(),
+        ),
+        LiquidGlassTabItem(
+          icon: LucideIcons.settings,
+          label: LocaleKeys.settings.tr(),
+        ),
+      ],
+      currentIndex: tab.value,
+      onTap: (i) => tab.value = i,
+    );
+
+    final Widget content = switch ((isReady: isReady, error: loadError)) {
+      (isReady: false, error: final Object error?) => _LoadStateView(
+        message: LocaleKeys.something_went_wrong.tr(),
+        detail: error.toString(),
+        onRetry: () {
+          ref
+            ..invalidate(categoriesProvider)
+            ..invalidate(entriesProvider);
+        },
+      ),
+      (isReady: false, error: _) => _LoadStateView(
+        message: LocaleKeys.loading_data.tr(),
+      ),
+      _ => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 840),
+          child: AnimatedIndexedStack(
+            index: tab.value,
+            children: const [HomeScreen(), StatsScreen(), SettingsScreen()],
+          ),
+        ),
+      ),
+    };
+
     return Scaffold(
       backgroundColor: FluentTheme.of(context).scaffoldBackgroundColor,
       floatingActionButton: isReady && balance.value?.incomes == 0.0
           ? PrimaryButton(onPressed: () {}, label: LocaleKeys.add_income.tr())
           : const SizedBox(),
       extendBody: true,
-      bottomNavigationBar: LiquidGlassTabBar(
-        indicatorColor: FluentTheme.of(context).indicatorColor,
-        items: [
-          LiquidGlassTabItem(
-            icon: LucideIcons.home,
-            label: LocaleKeys.home.tr(),
-          ),
-          LiquidGlassTabItem(
-            icon: LucideIcons.chartLine,
-            label: LocaleKeys.stats.tr(),
-          ),
-          LiquidGlassTabItem(
-            icon: LucideIcons.settings,
-            label: LocaleKeys.settings.tr(),
-          ),
-        ],
-        currentIndex: tab.value,
-        onTap: (i) => tab.value = i,
-      ),
-      body: switch ((isReady: isReady, error: loadError)) {
-        (isReady: false, error: final Object error?) => _LoadStateView(
-          message: LocaleKeys.something_went_wrong.tr(),
-          detail: error.toString(),
-          onRetry: () {
-            ref
-              ..invalidate(categoriesProvider)
-              ..invalidate(entriesProvider);
-          },
-        ),
-        (isReady: false, error: _) => _LoadStateView(
-          message: LocaleKeys.loading_data.tr(),
-        ),
-        _ => Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 840),
-            child: AnimatedIndexedStack(
-              index: tab.value,
-              children: const [HomeScreen(), StatsScreen(), SettingsScreen()],
-            ),
-          ),
-        ),
-      },
+      bottomNavigationBar: useSideNav ? null : navBar(),
+      body: useSideNav
+          ? Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                navBar(axis: Axis.vertical),
+                content,
+              ],
+            )
+          : content,
     );
   }
 }

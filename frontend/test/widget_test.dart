@@ -6,10 +6,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/core/app/app.dart';
+import 'package:frontend/features/subscriptions/domain/repositories/subscriptions_repository.dart';
 import 'package:frontend/features/tracker/domain/models/category.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 import 'package:frontend/features/tracker/domain/repositories/entries_repository.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'features/subscriptions/subscriptions_screen_test.dart'
+    show FakeSubscriptionRepository;
 
 /// Repository whose reads only complete when the test says so, which makes the
 /// initial loading state observable.
@@ -72,6 +76,9 @@ void main() {
         child: ProviderScope(
           overrides: [
             entryRepositoryProvider.overrideWithValue(repository),
+            subscriptionRepositoryProvider.overrideWithValue(
+              FakeSubscriptionRepository([]),
+            ),
           ],
           child: const App(),
         ),

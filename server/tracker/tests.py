@@ -6,7 +6,7 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from rest_framework.test import APIClient
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from .models import Category, CategoryType, Entry
+from .models import Category, CategoryType, Entry, Subscription, SubscriptionPeriod
 from .serializers import CategorySerializer, EntrySerializer
 import datetime
 
@@ -39,8 +39,8 @@ class ExpenseTrackerAPITests(TestCase):
             notes="Test expense"
         )
 
-        # Entries are behind auth; authenticate by default and let the
-        # specific "no token" tests drop credentials themselves.
+        # Authenticate by default; the "without token" tests drop
+        # credentials themselves.
         self.client.force_authenticate(user=self.user)
 
     # ==================== Category Tests ====================
@@ -195,11 +195,11 @@ class ExpenseTrackerAPITests(TestCase):
         response = self.client.post("/api/auth/login/", data, format="json")
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    def test_protected_endpoint_without_token(self):
-        """Test accessing a protected endpoint without authentication"""
+    def test_entries_open_without_token(self):
+        """Test entries are reachable without credentials (tailnet-only API)"""
         self.client.force_authenticate(user=None)
         response = self.client.get("/api/entries/")
-        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_protected_endpoint_with_token(self):
         """Test accessing a protected endpoint with valid token"""
@@ -234,7 +234,7 @@ class ExpenseTrackerAPITests(TestCase):
     def test_entry_serializer_fields(self):
         """Test that EntrySerializer includes all required fields"""
         serializer = EntrySerializer(self.entry)
-        expected_fields = ["id", "amount", "category", "added_date", "notes", "created_date"]
+        expected_fields = ["id", "amount", "category", "added_date", "notes", "created_date", "subscription"]
         self.assertEqual(set(serializer.fields.keys()), set(expected_fields))
 
     def test_category_serializer_validation(self):
@@ -258,3 +258,100 @@ class ExpenseTrackerAPITests(TestCase):
         })
         self.assertTrue(serializer.is_valid())
         self.assertEqual(serializer.validated_data["amount"], 50.00)
+
+    # ==================== Subscription Tests ====================
+
+    def _subscription(self, **kwargs):
+        defaults = {"name": "Phone", "amount": 5000, "period": SubscriptionPeriod.MONTHLY}
+        defaults.update(kwargs)
+        return Subscription.objects.create(**defaults)
+
+    def test_subscription_create(self):
+        """Test creating a subscription defaults it to active"""
+        data = {"name": "Netflix", "amount": 4290, "period": "M"}
+        response = self.client.post("/api/subscriptions/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["is_active"])
+        self.assertEqual(response.data["entries"], [])
+        self.assertEqual(response.data["total_spent"], 0)
+        self.assertIsNotNone(response.data["created_date"])
+
+    def test_subscription_create_invalid_period(self):
+        """Test an unknown period is rejected"""
+        data = {"name": "Netflix", "period": "X"}
+        response = self.client.post("/api/subscriptions/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_subscription_update(self):
+        """Test PUT acts as a partial update"""
+        subscription = self._subscription()
+        response = self.client.put(f"/api/subscriptions/{subscription.id}/", {"period": "W"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["period"], "W")
+        self.assertEqual(response.data["name"], "Phone")
+
+    def test_subscription_delete_is_soft(self):
+        """Test deleting a subscription only deactivates it and keeps entry links"""
+        subscription = self._subscription()
+        self.entry.subscription = subscription
+        self.entry.save()
+
+        response = self.client.delete(f"/api/subscriptions/{subscription.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        subscription.refresh_from_db()
+        self.assertFalse(subscription.is_active)
+        self.entry.refresh_from_db()
+        self.assertEqual(self.entry.subscription_id, subscription.id)
+
+    def test_subscription_reactivate(self):
+        """Test an inactive subscription can be made active again"""
+        subscription = self._subscription(is_active=False)
+        response = self.client.patch(f"/api/subscriptions/{subscription.id}/", {"is_active": True}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["is_active"])
+
+    def test_subscription_filter_by_active(self):
+        """Test filtering subscriptions by active state"""
+        self._subscription(name="Active")
+        self._subscription(name="Inactive", is_active=False)
+
+        active = self.client.get("/api/subscriptions/?active=true")
+        inactive = self.client.get("/api/subscriptions/?active=false")
+        self.assertEqual([s["name"] for s in active.data], ["Active"])
+        self.assertEqual([s["name"] for s in inactive.data], ["Inactive"])
+
+    def test_subscription_lists_linked_entries(self):
+        """Test linked entries are listed newest first with their total"""
+        subscription = self._subscription()
+        Entry.objects.create(
+            amount=5000, category=self.expense_category, subscription=subscription,
+            added_date=datetime.datetime(2026, 1, 5),
+        )
+        Entry.objects.create(
+            amount=5500, category=self.expense_category, subscription=subscription,
+            added_date=datetime.datetime(2026, 2, 5),
+        )
+
+        response = self.client.get(f"/api/subscriptions/{subscription.id}/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual([e["amount"] for e in response.data["entries"]], [5500, 5000])
+        self.assertEqual(response.data["total_spent"], 10500)
+
+    def test_entry_create_with_subscription(self):
+        """Test an entry can be linked to a subscription on create"""
+        subscription = self._subscription()
+        data = {
+            "amount": 5000,
+            "category": self.expense_category.id,
+            "added_date": datetime.datetime.now().isoformat(),
+            "subscription": subscription.id,
+        }
+        response = self.client.post("/api/entries/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["subscription"], subscription.id)
+
+    def test_subscriptions_open_without_token(self):
+        """Test subscriptions are reachable without credentials like entries"""
+        self.client.force_authenticate(user=None)
+        response = self.client.get("/api/subscriptions/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)

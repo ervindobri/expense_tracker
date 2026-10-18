@@ -11,16 +11,19 @@ class Entry {
     required this.category,
     required this.createdDate,
     this.notes = '',
+    this.subscription,
   });
   factory Entry.from(Map<String, dynamic> e) {
+    final category = e['category'];
     return Entry(
       id: e['id'] ?? 0,
-      amount: e['amount'] ?? 0.0,
-      // the API serializes the store as its integer primary key
-      category: e['category'] ?? 0,
+      amount: (e['amount'] as num?)?.toDouble() ?? 0.0,
+      // the API may send the category as its id or as the nested object
+      category: category is Map ? category['id'] ?? 0 : category ?? 0,
       addedDate: DateTime.parse(e['added_date'] ?? '').ignoringTimezone,
       notes: e['notes'] ?? '',
       createdDate: DateTime.parse(e['created_date'] ?? '').ignoringTimezone,
+      subscription: e['subscription'] as int?,
     );
   }
   final int id;
@@ -30,6 +33,9 @@ class Entry {
   final DateTime createdDate;
   final String notes;
 
+  /// Id of the subscription this entry pays for, if any.
+  final int? subscription;
+
   Map<String, dynamic> toJson() {
     return {
       'amount': amount,
@@ -37,10 +43,17 @@ class Entry {
       'added_date': addedDate.toIso8601String(),
       'notes': notes,
       'created_date': DateTime.now().toIso8601String(),
+      'subscription': subscription,
     };
   }
 
-  Entry copyWith({int? id, double? amount, String? notes}) {
+  /// [subscription] is a getter so `null` can be passed to unlink the entry.
+  Entry copyWith({
+    int? id,
+    double? amount,
+    String? notes,
+    int? Function()? subscription,
+  }) {
     return Entry(
       id: id ?? this.id,
       amount: amount ?? this.amount,
@@ -48,6 +61,7 @@ class Entry {
       category: category,
       notes: notes ?? this.notes,
       createdDate: createdDate,
+      subscription: subscription != null ? subscription() : this.subscription,
     );
   }
 }

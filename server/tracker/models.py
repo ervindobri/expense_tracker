@@ -43,6 +43,39 @@ class Category(models.Model):
     )
 
 
+class SubscriptionPeriod:
+    DAILY = "D"
+    WEEKLY = "W"
+    BIWEEKLY = "B"
+    MONTHLY = "M"
+    QUARTERLY = "Q"
+    YEARLY = "Y"
+
+    choices = [
+        (DAILY, _("Daily")),
+        (WEEKLY, _("Weekly")),
+        (BIWEEKLY, _("Bi-weekly")),
+        (MONTHLY, _("Monthly")),
+        (QUARTERLY, _("Quarterly")),
+        (YEARLY, _("Yearly")),
+    ]
+
+
+# Recurring cost (phone, streaming...). Removing one only marks it inactive so
+# its linked entries keep their history.
+class Subscription(models.Model):
+    name = models.CharField(max_length=100)
+    # expected cost per period; the actual spend comes from the linked entries
+    amount = models.FloatField(default=0)
+    period = models.CharField(
+        max_length=1,
+        choices=SubscriptionPeriod.choices,
+        default=SubscriptionPeriod.MONTHLY,
+    )
+    is_active = models.BooleanField(default=True)
+    created_date = models.DateTimeField("date subscription was created", auto_now_add=True)
+
+
 # Expense or income entry
 class Entry(models.Model):
     amount = models.FloatField(max_length=10)
@@ -50,6 +83,13 @@ class Entry(models.Model):
     added_date = models.DateTimeField("date published")
     created_date = models.DateTimeField("date entry was created", auto_now_add=True)
     notes = models.CharField(max_length=100,blank=True, default="")
+    subscription = models.ForeignKey(
+        Subscription,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="entries",
+    )
 
 
 

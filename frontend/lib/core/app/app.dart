@@ -16,6 +16,7 @@ import 'package:frontend/core/widgets/liquid_tabbar.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/features/settings/presentation/settings_screen.dart';
 import 'package:frontend/features/stats/presentation/stats_screen.dart';
+import 'package:frontend/features/subscriptions/presentation/subscriptions_screen.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/categories_provider.dart';
 import 'package:frontend/features/tracker/presentation/state/entries_provider.dart';
@@ -133,6 +134,10 @@ class HomeShell extends HookConsumerWidget {
       items: [
         LiquidGlassTabItem(icon: LucideIcons.home, label: LocaleKeys.home.tr()),
         LiquidGlassTabItem(
+          icon: LucideIcons.calendarSync,
+          label: LocaleKeys.subscriptions.tr(),
+        ),
+        LiquidGlassTabItem(
           icon: LucideIcons.chartLine,
           label: LocaleKeys.stats.tr(),
         ),
@@ -163,7 +168,12 @@ class HomeShell extends HookConsumerWidget {
           constraints: const BoxConstraints(maxWidth: 840),
           child: AnimatedIndexedStack(
             index: tab.value,
-            children: const [HomeScreen(), StatsScreen(), SettingsScreen()],
+            children: const [
+              HomeScreen(),
+              SubscriptionsScreen(),
+              StatsScreen(),
+              SettingsScreen(),
+            ],
           ),
         ),
       ),

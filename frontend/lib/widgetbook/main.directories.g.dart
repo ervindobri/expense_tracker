@@ -14,6 +14,8 @@ import 'package:frontend/widgetbook/use_cases/blurred_container.dart'
     as _frontend_widgetbook_use_cases_blurred_container;
 import 'package:frontend/widgetbook/use_cases/buttons.dart'
     as _frontend_widgetbook_use_cases_buttons;
+import 'package:frontend/widgetbook/use_cases/subscriptions.dart'
+    as _frontend_widgetbook_use_cases_subscriptions;
 import 'package:frontend/widgetbook/use_cases/tab_bars.dart'
     as _frontend_widgetbook_use_cases_tab_bars;
 import 'package:widgetbook/widgetbook.dart' as _widgetbook;
@@ -72,6 +74,56 @@ final directories = <_widgetbook.WidgetbookNode>[
                 name: 'Default',
                 builder: _frontend_widgetbook_use_cases_buttons
                     .secondaryButtonUseCase,
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  ),
+  _widgetbook.WidgetbookFolder(
+    name: 'features',
+    children: [
+      _widgetbook.WidgetbookFolder(
+        name: 'subscriptions',
+        children: [
+          _widgetbook.WidgetbookComponent(
+            name: 'RenewalBadge',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Default',
+                builder: _frontend_widgetbook_use_cases_subscriptions
+                    .renewalBadgeUseCase,
+              ),
+            ],
+          ),
+          _widgetbook.WidgetbookComponent(
+            name: 'RenewingSoonCard',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Default',
+                builder: _frontend_widgetbook_use_cases_subscriptions
+                    .renewingSoonCardUseCase,
+              ),
+            ],
+          ),
+          _widgetbook.WidgetbookComponent(
+            name: 'SubscriptionCard',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Default',
+                builder: _frontend_widgetbook_use_cases_subscriptions
+                    .subscriptionCardUseCase,
+              ),
+            ],
+          ),
+          _widgetbook.WidgetbookComponent(
+            name: 'SubscriptionSummaryCard',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Default',
+                builder: _frontend_widgetbook_use_cases_subscriptions
+                    .subscriptionSummaryCardUseCase,
               ),
             ],
           ),

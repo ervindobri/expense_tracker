@@ -18,6 +18,8 @@ import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/widgets/height_crossfade.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/core/widgets/secondary_button.dart';
+import 'package:frontend/features/subscriptions/presentation/state/subscriptions_provider.dart';
+import 'package:frontend/features/subscriptions/presentation/widgets/subscription_picker.dart';
 import 'package:frontend/features/tracker/domain/models/category.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 import 'package:frontend/features/tracker/domain/repositories/entries_repository.dart';
@@ -272,6 +274,7 @@ class EditEntryView extends HookWidget {
     final notesController = useTextEditingController();
     final amountController = useTextEditingController();
     final isSaving = useState(false);
+    final subscription = useState<int?>(null);
     // Rebuild on typing so the notes clear button and amount validity update.
     useListenable(notesController);
     useListenable(amountController);
@@ -285,6 +288,7 @@ class EditEntryView extends HookWidget {
       final entry = lastEditedEntry.value;
       if (entry != null) {
         notesController.text = entry.notes;
+        subscription.value = entry.subscription;
         amountController.text = entry.amount == entry.amount.truncateToDouble()
             ? entry.amount.toInt().toString()
             : entry.amount.toStringAsFixed(2);
@@ -309,8 +313,13 @@ class EditEntryView extends HookWidget {
         final updatedEntry = entry.copyWith(
           amount: parsedAmount,
           notes: notesController.text,
+          subscription: () => subscription.value,
         );
         await ref.read(entryRepositoryProvider).updateEntry(updatedEntry);
+        if (entry.subscription != null || updatedEntry.subscription != null) {
+          // linked totals / transaction lists changed
+          ref.invalidate(subscriptionsProvider);
+        }
         lastEditedEntry.value = updatedEntry;
         onSaved?.call(updatedEntry);
         unawaited(HapticFeedback.lightImpact());
@@ -439,6 +448,10 @@ class EditEntryView extends HookWidget {
             prefixIcon: const Icon(LucideIcons.messageCircle),
           ),
         ),
+        SubscriptionPicker(
+          value: subscription.value,
+          onChanged: (id) => subscription.value = id,
+        ),
         Column(
           spacing: 4,
           children: [
@@ -504,6 +517,7 @@ class EntryTotalView extends HookConsumerWidget {
 
     final amountController = useTextEditingController();
     final amountField = useFocusNode();
+    final subscription = useState<int?>(null);
     useArithmeticEvaluation(
       amountController,
       enabled: supportsInlineArithmetic,
@@ -535,10 +549,15 @@ class EntryTotalView extends HookConsumerWidget {
             addedDate: entryDate.ignoringTimezone,
             category: category.id,
             createdDate: DateTime.now(),
+            subscription: subscription.value,
           );
           final result = await ref
               .read(entryRepositoryProvider)
               .addEntry(entry);
+          if (subscription.value != null) {
+            ref.invalidate(subscriptionsProvider);
+            subscription.value = null;
+          }
           stateEntries.value = [
             ...stateEntries.value,
             entry.copyWith(id: result),
@@ -704,6 +723,11 @@ class EntryTotalView extends HookConsumerWidget {
                 ],
               ),
             ),
+          ),
+        if (!addDisabled && category.isExpense)
+          SubscriptionPicker(
+            value: subscription.value,
+            onChanged: (id) => subscription.value = id,
           ),
         if (!addDisabled)
           FractionallySizedBox(

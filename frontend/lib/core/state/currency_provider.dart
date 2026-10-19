@@ -48,6 +48,20 @@ final hufExchangeRateProvider = FutureProvider<double>((ref) async {
   return service.getExchangeRate(Currency.huf, selectedCurrency);
 });
 
+/// How many HUF one unit of the given currency is worth. Used for amounts
+/// stored in another currency (e.g. subscription prices).
+final toHufRateProvider = FutureProvider.family<double, Currency>((
+  ref,
+  currency,
+) async {
+  if (currency == Currency.huf) {
+    return 1.0;
+  }
+  return ref
+      .watch(currencyServiceProvider)
+      .getExchangeRate(currency, Currency.huf);
+});
+
 /// Convenience: converts a HUF [amountInHuf] into the currently-selected
 /// currency. Use this directly in widgets when you just need a display value.
 final convertedAmountProvider = FutureProvider.family<double, double>((

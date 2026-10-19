@@ -12,6 +12,7 @@ import 'package:frontend/features/subscriptions/domain/models/subscription.dart'
 import 'package:frontend/features/subscriptions/presentation/widgets/renewal_badge.dart';
 import 'package:frontend/features/subscriptions/presentation/widgets/subscription_avatar.dart';
 import 'package:frontend/features/subscriptions/presentation/widgets/subscription_detail_sheet.dart';
+import 'package:frontend/features/subscriptions/presentation/widgets/subscription_price.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -72,8 +73,8 @@ class SubscriptionCard extends ConsumerWidget {
                   spacing: 6,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      ref.formattedAmount(subscription.amount),
+                    SubscriptionPrice(
+                      subscription: subscription,
                       style: textTheme.bodyLarge,
                     ),
                     RenewalBadge(subscription: subscription),
@@ -139,15 +140,22 @@ class RenewingSoonCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  subscription.amount > 0
-                      ? ref.formattedAmount(subscription.amount)
-                      : subscription.period.label,
-                  maxLines: 1,
-                  style: textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).hintColor,
+                if (subscription.amount > 0)
+                  SubscriptionPrice(
+                    subscription: subscription,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
+                  )
+                else
+                  Text(
+                    subscription.period.label,
+                    maxLines: 1,
+                    style: textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).hintColor,
+                    ),
                   ),
-                ),
               ],
             ),
           ),

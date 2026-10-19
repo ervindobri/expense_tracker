@@ -69,5 +69,6 @@
   "subscription_removed": "Moved to inactive",
   "subscription_reactivated": "Subscription reactivated",
   "error_saving_subscription": "Couldn't save subscription: {error}",
-  "payments_count": "{value} payments"
+  "payments_count": "{value} payments",
+  "today": "Today"
 }

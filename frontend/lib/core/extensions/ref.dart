@@ -13,6 +13,17 @@ extension CurrencyExt on WidgetRef {
     return watch(currencyProvider);
   }
 
+  /// [amount] given in [currency], converted to HUF. Uses the fallback rate
+  /// until the live one has loaded.
+  double hufAmount(double amount, Currency currency) {
+    if (currency == Currency.huf) {
+      return amount;
+    }
+    final rate =
+        watch(toHufRateProvider(currency)).value ?? currency.fallbackToHuf;
+    return amount * rate;
+  }
+
   /// [amount] (HUF) converted and formatted with the selected currency symbol.
   String formattedAmount(double amount, {bool showDecimals = false}) {
     return convertedAmount(

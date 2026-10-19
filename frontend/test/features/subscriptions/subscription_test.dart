@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:frontend/features/subscriptions/domain/models/subscription.dart';
 import 'package:frontend/features/subscriptions/presentation/state/subscriptions_provider.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
@@ -130,6 +131,7 @@ void main() {
 
       expect(sub.id, 3);
       expect(sub.amount, 4290.0);
+      expect(sub.currency, Currency.huf); // missing -> HUF
       expect(sub.period, SubscriptionPeriod.quarterly);
       expect(sub.isActive, isFalse);
       expect(sub.totalSpent, 8580.0);
@@ -139,17 +141,27 @@ void main() {
     });
 
     test('round-trips the writable fields', () {
+      final created = DateTime(2026, 9, 5, 14, 30);
       final json = _sub(
         SubscriptionPeriod.biweekly,
-        DateTime(2026),
+        created,
         amount: 1200,
       ).toJson();
       expect(json, {
         'name': 'Phone',
         'amount': 1200.0,
+        'currency': 'HUF',
         'period': 'B',
         'is_active': true,
+        'created_date': created.toUtc().toIso8601String(),
       });
+      // the API sends it back in UTC; it reads as the same local moment
+      final parsed = Subscription.from({
+        ...json,
+        'id': 1,
+        'created_date': json['created_date'],
+      });
+      expect(parsed.createdDate, created);
     });
   });
 
@@ -193,5 +205,41 @@ void main() {
       expect(summary.totalSpent, 71000);
       expect(summary.monthlyCost, 6000);
     });
+
+    test('converts foreign prices to HUF for the monthly cost', () {
+      final summary = summarize(
+        [
+          _sub(SubscriptionPeriod.monthly, DateTime(2026), amount: 3000),
+          Subscription(
+            id: 2,
+            name: 'Spotify',
+            period: SubscriptionPeriod.monthly,
+            createdDate: DateTime(2026),
+            amount: 10,
+            currency: Currency.eur,
+          ),
+        ],
+        hufRates: {Currency.eur: 400},
+      );
+      expect(summary.monthlyCost, 7000);
+    });
+  });
+
+  test('parses and sends the price currency', () {
+    final sub = Subscription.from({
+      'id': 1,
+      'name': 'Spotify',
+      'amount': 10.99,
+      'currency': 'EUR',
+      'period': 'M',
+      'created_date': '2026-10-01T10:00:00Z',
+    });
+    expect(sub.currency, Currency.eur);
+    expect(sub.copyWith(currency: Currency.usd).toJson()['currency'], 'USD');
+  });
+
+  test('fallback rates convert in both directions', () {
+    expect(Currency.huf.fallbackToHuf, 1);
+    expect(Currency.eur.fallbackToHuf, closeTo(362.3, 0.1));
   });
 }

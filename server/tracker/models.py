@@ -61,19 +61,35 @@ class SubscriptionPeriod:
     ]
 
 
+class Currency:
+    HUF = "HUF"
+    EUR = "EUR"
+    USD = "USD"
+
+    choices = [
+        (HUF, "HUF"),
+        (EUR, "EUR"),
+        (USD, "USD"),
+    ]
+
+
 # Recurring cost (phone, streaming...). Removing one only marks it inactive so
 # its linked entries keep their history.
 class Subscription(models.Model):
     name = models.CharField(max_length=100)
-    # expected cost per period; the actual spend comes from the linked entries
+    # expected cost per period, in `currency`; the actual spend comes from the
+    # linked entries (always HUF)
     amount = models.FloatField(default=0)
+    currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.HUF)
     period = models.CharField(
         max_length=1,
         choices=SubscriptionPeriod.choices,
         default=SubscriptionPeriod.MONTHLY,
     )
     is_active = models.BooleanField(default=True)
-    created_date = models.DateTimeField("date subscription was created", auto_now_add=True)
+    # set by the user (a subscription may have started on an earlier day);
+    # renewals are counted from it
+    created_date = models.DateTimeField("date subscription was created", default=timezone.now)
 
 
 # Expense or income entry

@@ -28,8 +28,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Subscription
-        fields = ["id", "name", "amount", "period", "is_active", "created_date", "entries", "total_spent"]
-        read_only_fields = ["created_date"]
+        fields = ["id", "name", "amount", "currency", "period", "is_active", "created_date", "entries", "total_spent"]
 
     def _entries(self, instance):
         # newest first; sorted in Python so a prefetched list is reused

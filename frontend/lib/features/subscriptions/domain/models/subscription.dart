@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:easy_localization/easy_localization.dart';
 import 'package:frontend/core/localization/locale_keys.dart';
+import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 
 enum SubscriptionPeriod { daily, weekly, biweekly, monthly, quarterly, yearly }
@@ -80,6 +81,7 @@ class Subscription {
     required this.period,
     required this.createdDate,
     this.amount = 0,
+    this.currency = Currency.huf,
     this.isActive = true,
     this.entries = const [],
     this.totalSpent = 0,
@@ -90,9 +92,10 @@ class Subscription {
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      currency: CurrencyCode.fromCode(json['currency']),
       period: SubscriptionPeriodExt.fromApi(json['period']),
       isActive: json['is_active'] ?? true,
-      // auto timestamp, stored in UTC
+      // stored in UTC
       createdDate: DateTime.parse(json['created_date'] ?? '').toLocal(),
       entries: (json['entries'] as List<dynamic>? ?? [])
           .map((e) => Entry.from(e))
@@ -104,8 +107,10 @@ class Subscription {
   final int id;
   final String name;
 
-  /// Expected cost per period; actual spending comes from [entries].
+  /// Expected cost per period in [currency]; actual spending comes from
+  /// [entries], which are always HUF.
   final double amount;
+  final Currency currency;
   final SubscriptionPeriod period;
   final bool isActive;
   final DateTime createdDate;
@@ -114,6 +119,7 @@ class Subscription {
   final List<Entry> entries;
   final double totalSpent;
 
+  /// Monthly cost in [currency].
   double get monthlyCost => amount * period.perMonth;
 
   DateTime? get lastPayment => entries.firstOrNull?.addedDate;
@@ -164,24 +170,29 @@ class Subscription {
     return {
       'name': name,
       'amount': amount,
+      'currency': currency.code,
       'period': period.apiValue,
       'is_active': isActive,
+      'created_date': createdDate.toUtc().toIso8601String(),
     };
   }
 
   Subscription copyWith({
     String? name,
     double? amount,
+    Currency? currency,
     SubscriptionPeriod? period,
     bool? isActive,
+    DateTime? createdDate,
   }) {
     return Subscription(
       id: id,
       name: name ?? this.name,
       amount: amount ?? this.amount,
+      currency: currency ?? this.currency,
       period: period ?? this.period,
       isActive: isActive ?? this.isActive,
-      createdDate: createdDate,
+      createdDate: createdDate ?? this.createdDate,
       entries: entries,
       totalSpent: totalSpent,
     );

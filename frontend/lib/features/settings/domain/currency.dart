@@ -38,4 +38,13 @@ extension CurrencyCode on Currency {
       Currency.usd => 0.00318,
     };
   }
+
+  /// Offline estimate of how many HUF one unit is worth.
+  double get fallbackToHuf =>
+      Currency.huf.fallbackExchangeRate / fallbackExchangeRate;
+
+  static Currency fromCode(String? code) => Currency.values.firstWhere(
+    (c) => c.code == code,
+    orElse: () => Currency.huf,
+  );
 }

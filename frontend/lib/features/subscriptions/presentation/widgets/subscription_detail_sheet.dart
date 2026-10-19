@@ -20,6 +20,7 @@ import 'package:frontend/features/subscriptions/presentation/state/subscriptions
 import 'package:frontend/features/subscriptions/presentation/widgets/renewal_badge.dart';
 import 'package:frontend/features/subscriptions/presentation/widgets/subscription_avatar.dart';
 import 'package:frontend/features/subscriptions/presentation/widgets/subscription_form_sheet.dart';
+import 'package:frontend/features/subscriptions/presentation/widgets/subscription_price.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -123,19 +124,39 @@ class SubscriptionDetailSheet extends HookConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    children: [
+                child: Column(
+                  spacing: 2,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text.rich(
                       TextSpan(
-                        text: ref.formattedAmount(subscription.amount),
-                        style: textTheme.headlineMedium,
+                        children: [
+                          TextSpan(
+                            text: formatInCurrency(
+                              subscription.amount,
+                              subscription.currency,
+                            ),
+                            style: textTheme.headlineMedium,
+                          ),
+                          TextSpan(
+                            text:
+                                '  / ${subscription.period.label.toLowerCase()}',
+                            style: textTheme.bodyMedium?.copyWith(color: hint),
+                          ),
+                        ],
                       ),
-                      TextSpan(
-                        text: '  / ${subscription.period.label.toLowerCase()}',
+                    ),
+                    if (convertedHint(
+                          ref,
+                          subscription.amount,
+                          subscription.currency,
+                        )
+                        case final converted?)
+                      Text(
+                        converted,
                         style: textTheme.bodyMedium?.copyWith(color: hint),
                       ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
               RenewalBadge(subscription: subscription),

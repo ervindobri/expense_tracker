@@ -60,6 +60,7 @@ class LocaleKeys {
   static const reactivate_subscription = 'reactivate_subscription';
   static const next_renewal = 'next_renewal';
   static const created_on = 'created_on';
+  static const today = 'today';
   static const last_payment = 'last_payment';
   static const related_transactions = 'related_transactions';
   static const no_related_transactions = 'no_related_transactions';

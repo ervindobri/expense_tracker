@@ -276,6 +276,45 @@ class ExpenseTrackerAPITests(TestCase):
         self.assertEqual(response.data["total_spent"], 0)
         self.assertIsNotNone(response.data["created_date"])
 
+    def test_subscription_create_with_past_created_date(self):
+        """Test the creation date can be set to an earlier day"""
+        data = {"name": "Phone", "period": "M", "created_date": "2026-09-05T10:00:00Z"}
+        response = self.client.post("/api/subscriptions/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(response.data["created_date"].startswith("2026-09-05T10:00:00"))
+
+    def test_subscription_update_created_date(self):
+        """Test the creation date can be edited later"""
+        subscription = self._subscription()
+        response = self.client.patch(
+            f"/api/subscriptions/{subscription.id}/",
+            {"created_date": "2026-01-31T12:00:00Z"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        subscription.refresh_from_db()
+        self.assertEqual(subscription.created_date.date(), datetime.date(2026, 1, 31))
+
+    def test_subscription_currency_defaults_to_huf(self):
+        """Test subscriptions without a currency are in HUF"""
+        response = self.client.post("/api/subscriptions/", {"name": "Phone"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["currency"], "HUF")
+
+    def test_subscription_with_foreign_currency(self):
+        """Test a subscription can be priced in another supported currency"""
+        data = {"name": "Spotify", "amount": 10.99, "currency": "EUR"}
+        response = self.client.post("/api/subscriptions/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["currency"], "EUR")
+        self.assertEqual(response.data["amount"], 10.99)
+
+    def test_subscription_rejects_unsupported_currency(self):
+        """Test currencies outside the supported list are rejected"""
+        data = {"name": "Spotify", "currency": "GBP"}
+        response = self.client.post("/api/subscriptions/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
     def test_subscription_create_invalid_period(self):
         """Test an unknown period is rejected"""
         data = {"name": "Netflix", "period": "X"}

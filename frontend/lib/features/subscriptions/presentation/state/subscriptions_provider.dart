@@ -1,3 +1,5 @@
+import 'package:frontend/core/state/currency_provider.dart';
+import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:frontend/features/subscriptions/domain/models/subscription.dart';
 import 'package:frontend/features/subscriptions/domain/repositories/subscriptions_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -42,7 +44,11 @@ typedef SubscriptionSummary = ({
 @riverpod
 SubscriptionSummary subscriptionSummary(Ref ref) {
   final all = ref.watch(subscriptionsProvider).value ?? const [];
-  return summarize(all);
+  final hufRates = {
+    for (final c in all.map((s) => s.currency).toSet())
+      c: ref.watch(toHufRateProvider(c)).value ?? c.fallbackToHuf,
+  };
+  return summarize(all, hufRates: hufRates);
 }
 
 List<Subscription> sortByRenewal(Iterable<Subscription> subscriptions) {
@@ -54,11 +60,23 @@ List<Subscription> sortByRenewal(Iterable<Subscription> subscriptions) {
 
 /// Spending counts every subscription, removed ones included, since that
 /// money was still spent; the count and monthly cost only cover active ones.
-SubscriptionSummary summarize(List<Subscription> subscriptions) {
+/// [hufRates] converts prices in other currencies; the result is in HUF.
+SubscriptionSummary summarize(
+  List<Subscription> subscriptions, {
+  Map<Currency, double> hufRates = const {},
+}) {
   final active = subscriptions.where((s) => s.isActive);
   return (
     activeCount: active.length,
     totalSpent: subscriptions.fold(0.0, (sum, s) => sum + s.totalSpent),
-    monthlyCost: active.fold(0.0, (sum, s) => sum + s.monthlyCost),
+    monthlyCost: active.fold(
+      0.0,
+      (sum, s) =>
+          sum +
+          s.monthlyCost *
+              (s.currency == Currency.huf
+                  ? 1
+                  : hufRates[s.currency] ?? s.currency.fallbackToHuf),
+    ),
   );
 }

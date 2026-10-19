@@ -160,8 +160,11 @@ class HomeShell extends HookConsumerWidget {
             ..invalidate(entriesProvider);
         },
       ),
-      (isReady: false, error: _) => _LoadStateView(
-        message: LocaleKeys.loading_data.tr(),
+      (isReady: false, error: _) => Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 840),
+          child: _LoadStateView(message: LocaleKeys.loading_data.tr()),
+        ),
       ),
       _ => Center(
         child: ConstrainedBox(

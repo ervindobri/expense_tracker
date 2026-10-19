@@ -69,5 +69,6 @@
   "subscription_removed": "Áthelyezve az inaktívak közé",
   "subscription_reactivated": "Előfizetés újraaktiválva",
   "error_saving_subscription": "Nem sikerült menteni az előfizetést: {error}",
-  "payments_count": "{value} fizetés"
+  "payments_count": "{value} fizetés",
+  "today": "Ma"
 }

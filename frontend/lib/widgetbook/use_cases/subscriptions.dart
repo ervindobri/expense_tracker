@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:frontend/features/subscriptions/domain/models/subscription.dart';
 import 'package:frontend/features/subscriptions/presentation/widgets/renewal_badge.dart';
 import 'package:frontend/features/subscriptions/presentation/widgets/subscription_card.dart';
@@ -27,6 +28,11 @@ Subscription _subscription(BuildContext context) {
     id: context.knobs.int.slider(label: 'Color (id)', initialValue: 1, max: 9),
     name: context.knobs.string(label: 'Name', initialValue: 'Phone'),
     amount: context.knobs.double.input(label: 'Price', initialValue: 5000),
+    currency: context.knobs.object.dropdown(
+      label: 'Currency',
+      options: Currency.values,
+      labelBuilder: (c) => c.code,
+    ),
     period: period,
     createdDate: period.advance(renewal, -1),
     isActive: context.knobs.boolean(label: 'Active', initialValue: true),

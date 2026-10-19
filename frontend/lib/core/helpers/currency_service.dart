@@ -54,7 +54,8 @@ class CurrencyService {
       if (kDebugMode) {
         print(CurrencyConversionException('Network error: $e'));
       }
-      return to.fallbackExchangeRate;
+      // fallback rates are per 1 HUF, so cross them for any pair
+      return to.fallbackExchangeRate / from.fallbackExchangeRate;
     }
   }
 

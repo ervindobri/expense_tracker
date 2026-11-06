@@ -10,7 +10,9 @@ import 'package:frontend/features/shopping/domain/models/shopping_list.dart';
 import 'package:frontend/features/shopping/domain/repositories/shopping_repository.dart';
 import 'package:frontend/features/shopping/presentation/shopping_list_screen.dart';
 import 'package:frontend/features/shopping/presentation/shopping_lists_screen.dart';
+import 'package:frontend/features/shopping/presentation/widgets/shopping_item_sheet.dart';
 import 'package:frontend/features/shopping/presentation/widgets/shopping_item_tile.dart';
+import 'package:frontend/features/shopping/presentation/widgets/shopping_links.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FakeShoppingRepository implements IShoppingRepository {
@@ -47,6 +49,7 @@ class FakeShoppingRepository implements IShoppingRepository {
       id: _nextId++,
       listId: item.listId,
       name: item.name,
+      description: item.description,
       expectedPrice: item.expectedPrice,
       currency: item.currency,
       buyingGoal: item.buyingGoal,
@@ -238,5 +241,46 @@ void main() {
 
     expect(repository.removedItems, [11]);
     expect(find.text('Lamp'), findsNothing);
+  });
+
+  testWidgets('shows the description and saves edits to it', (tester) async {
+    final lists = _lists();
+    lists[0] = lists[0].copyWith(
+      items: [
+        lists[0].items.first.copyWith(
+          description: 'Grey\nhttps://www.ikea.com/hu/hu/p/sofa-123/',
+        ),
+        ...lists[0].items.skip(1),
+      ],
+    );
+    final repository = FakeShoppingRepository(lists);
+    await _pump(tester, repository, home: const ShoppingListScreen(listId: 1));
+
+    expect(find.text('Grey · ikea.com'), findsOneWidget);
+    expect(find.byTooltip('Open link'), findsOneWidget);
+
+    await tester.tap(find.text('Sofa'));
+    await tester.pumpAndSettle();
+    expect(find.byType(ShoppingItemSheet), findsOneWidget);
+    expect(find.byType(ShoppingLinkChips), findsOneWidget);
+
+    final description = find.descendant(
+      of: find.byType(ShoppingItemSheet),
+      matching: find.byWidgetPredicate(
+        (w) => w is TextField && w.maxLines == 5,
+      ),
+    );
+    await tester.enterText(description, 'Blue, www.jysk.hu/sofa');
+    await tester.pump();
+    expect(find.text('jysk.hu'), findsOneWidget);
+
+    await tester.tap(find.text('Save changes'));
+    await tester.pumpAndSettle();
+
+    expect(
+      repository.updatedItems.single.description,
+      'Blue, www.jysk.hu/sofa',
+    );
+    expect(find.text('Blue, jysk.hu'), findsOneWidget);
   });
 }

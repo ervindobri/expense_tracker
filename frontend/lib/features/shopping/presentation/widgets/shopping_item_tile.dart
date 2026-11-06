@@ -12,6 +12,7 @@ import 'package:frontend/features/shopping/domain/models/shopping_list.dart';
 import 'package:frontend/features/shopping/presentation/state/shopping_provider.dart';
 import 'package:frontend/features/shopping/presentation/widgets/shopping_error.dart';
 import 'package:frontend/features/shopping/presentation/widgets/shopping_item_sheet.dart';
+import 'package:frontend/features/shopping/presentation/widgets/shopping_links.dart';
 import 'package:frontend/features/subscriptions/presentation/widgets/subscription_price.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -43,6 +44,8 @@ class ShoppingItemTile extends ConsumerWidget {
     final hint = Theme.of(context).hintColor;
     final notifier = ref.read(shoppingListsProvider.notifier);
     final overdue = item.isOverdue();
+    final preview = descriptionPreview(item.description);
+    final links = item.links;
 
     Future<void> toggle() async {
       unawaited(
@@ -128,6 +131,13 @@ class ShoppingItemTile extends ConsumerWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (preview.isNotEmpty)
+                          Text(
+                            preview,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.bodySmall?.copyWith(color: hint),
+                          ),
                         if (item.buyingGoal != null && !item.isBought)
                           Row(
                             spacing: 4,
@@ -155,6 +165,14 @@ class ShoppingItemTile extends ConsumerWidget {
                       style: textTheme.bodyMedium?.copyWith(
                         color: item.isBought ? hint : null,
                       ),
+                    ),
+                  if (links.isNotEmpty)
+                    IconButton(
+                      tooltip: LocaleKeys.open_link.tr(),
+                      visualDensity: VisualDensity.compact,
+                      color: hint,
+                      onPressed: () => openLink(context, links.first),
+                      icon: const Icon(LucideIcons.externalLink, size: 18),
                     ),
                 ],
               ),

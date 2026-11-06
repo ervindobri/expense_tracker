@@ -14,12 +14,13 @@ import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/widgets/currency_dropdown.dart';
 import 'package:frontend/core/widgets/date_picker.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
-import 'package:frontend/core/widgets/secondary_button.dart';
 import 'package:frontend/core/widgets/sheet_container.dart';
 import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:frontend/features/shopping/domain/models/shopping_list.dart';
 import 'package:frontend/features/shopping/presentation/state/shopping_provider.dart';
 import 'package:frontend/features/shopping/presentation/widgets/shopping_error.dart';
+import 'package:frontend/features/shopping/presentation/widgets/shopping_links.dart';
+import 'package:frontend/features/shopping/presentation/widgets/shopping_widgets.dart';
 import 'package:frontend/features/subscriptions/presentation/widgets/subscription_price.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -44,6 +45,9 @@ class ShoppingItemSheet extends HookConsumerWidget {
     final nameController = useTextEditingController(
       text: initial?.name ?? initialName,
     );
+    final descriptionController = useTextEditingController(
+      text: initial?.description,
+    );
     final priceController = useTextEditingController(
       text: switch (initial?.expectedPrice) {
         null || 0 => '',
@@ -55,6 +59,7 @@ class ShoppingItemSheet extends HookConsumerWidget {
     final goal = useState(initial?.buyingGoal);
     final isSaving = useState(false);
     useListenable(nameController);
+    useListenable(descriptionController);
     useListenable(priceController);
     useArithmeticEvaluation(priceController, enabled: supportsInlineArithmetic);
 
@@ -62,6 +67,8 @@ class ShoppingItemSheet extends HookConsumerWidget {
     final textTheme = Theme.of(context).textTheme;
     final hint = Theme.of(context).hintColor;
     final name = nameController.text.trim();
+    final description = descriptionController.text.trim();
+    final links = extractLinks(description);
     final price = priceController.text.isEmpty
         ? 0.0
         : priceController.text.parseAmount;
@@ -103,6 +110,7 @@ class ShoppingItemSheet extends HookConsumerWidget {
           await notifier.updateItem(
             initial!.copyWith(
               name: name,
+              description: description,
               expectedPrice: price,
               currency: currency.value,
               buyingGoal: () => goal.value,
@@ -114,6 +122,7 @@ class ShoppingItemSheet extends HookConsumerWidget {
               id: -1,
               listId: listId,
               name: name,
+              description: description,
               expectedPrice: price,
               currency: currency.value,
               buyingGoal: goal.value,
@@ -187,6 +196,35 @@ class ShoppingItemSheet extends HookConsumerWidget {
                         style: textTheme.titleMedium,
                         decoration: inputDecoration.copyWith(
                           hintText: LocaleKeys.item_name_hint.tr(),
+                          counterText: '',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                Divider(color: theme.dividerColor),
+                Row(
+                  spacing: 12,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 6),
+                      child: Icon(LucideIcons.notebookText),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: descriptionController,
+                        minLines: 1,
+                        maxLines: 5,
+                        maxLength: 2000,
+                        keyboardType: TextInputType.multiline,
+                        textCapitalization: TextCapitalization.sentences,
+                        style: textTheme.bodyLarge,
+                        decoration: inputDecoration.copyWith(
+                          hintText: LocaleKeys.item_description_hint.tr(),
+                          hintStyle: textTheme.bodyLarge?.copyWith(
+                            color: theme.dividerColor,
+                          ),
                           counterText: '',
                         ),
                       ),
@@ -285,20 +323,18 @@ class ShoppingItemSheet extends HookConsumerWidget {
               ],
             ),
           ),
+          if (links.isNotEmpty) ShoppingLinkChips(links: links),
           Row(
             spacing: 12,
             children: [
               if (isEditing)
-                Expanded(
-                  child: SecondaryButton(
-                    onPressed: delete,
-                    padding: const EdgeInsets.all(12.0),
-                    icon: LucideIcons.trash2,
-                    label: LocaleKeys.delete.tr(),
-                  ),
+                ShoppingActionButton(
+                  icon: LucideIcons.trash2,
+                  tooltip: LocaleKeys.delete.tr(),
+                  filled: false,
+                  onPressed: delete,
                 ),
               Expanded(
-                flex: 2,
                 child: AnimatedOpacity(
                   opacity: isValid ? 1.0 : 0.5,
                   duration: kThemeAnimationDuration,

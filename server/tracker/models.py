@@ -129,6 +129,8 @@ class ShoppingItem(models.Model):
         related_name="items",
     )
     name = models.CharField(max_length=100)
+    # free-form notes: product details, links to where to buy it
+    description = models.TextField(blank=True, default="")
     # estimate in `currency`
     expected_price = models.FloatField(default=0)
     currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.HUF)

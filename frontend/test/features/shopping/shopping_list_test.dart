@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:frontend/features/shopping/domain/models/shopping_list.dart';
+import 'package:frontend/features/shopping/presentation/widgets/shopping_links.dart';
 
 void main() {
   group('ShoppingItem', () {
@@ -121,6 +122,44 @@ void main() {
         'No goal B',
       ]);
       expect(list.bought.map((i) => i.name), ['Done']);
+    });
+  });
+
+  group('description', () {
+    test('round-trips through the API shape and defaults to empty', () {
+      final item = ShoppingItem.from({
+        'id': 1,
+        'shopping_list': 1,
+        'name': 'Sofa',
+        'description': 'Grey, 3 seats',
+      });
+      expect(item.description, 'Grey, 3 seats');
+      expect(item.toJson()['description'], 'Grey, 3 seats');
+      expect(item.copyWith(description: 'Blue').description, 'Blue');
+      expect(ShoppingItem.from({'id': 1, 'shopping_list': 1}).description, '');
+    });
+
+    test('finds http(s) and www links without trailing punctuation', () {
+      final links = extractLinks(
+        'Sofa (https://www.ikea.com/hu/hu/p/sofa-123/), or '
+        'www.jysk.hu/sofa. Also https://www.ikea.com/hu/hu/p/sofa-123/ again',
+      );
+      expect(links.map((l) => l.toString()), [
+        'https://www.ikea.com/hu/hu/p/sofa-123/',
+        'https://www.jysk.hu/sofa',
+      ]);
+      expect(links.map(linkLabel), ['ikea.com', 'jysk.hu']);
+      expect(extractLinks('no links here, just a.b'), isEmpty);
+    });
+
+    test('preview is one line with links shortened to their site', () {
+      expect(
+        descriptionPreview(
+          'Grey, 3 seats\n\nhttps://www.ikea.com/hu/hu/p/sofa-123/',
+        ),
+        'Grey, 3 seats · ikea.com',
+      );
+      expect(descriptionPreview(''), '');
     });
   });
 }

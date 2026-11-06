@@ -6,6 +6,7 @@ class ShoppingItem {
     required this.id,
     required this.listId,
     required this.name,
+    this.description = '',
     this.expectedPrice = 0,
     this.currency = Currency.huf,
     this.buyingGoal,
@@ -18,6 +19,7 @@ class ShoppingItem {
       id: json['id'] ?? 0,
       listId: json['shopping_list'] ?? 0,
       name: json['name'] ?? '',
+      description: json['description'] ?? '',
       expectedPrice: (json['expected_price'] as num?)?.toDouble() ?? 0,
       currency: CurrencyCode.fromCode(json['currency']),
       // a plain date, so no timezone conversion
@@ -29,6 +31,12 @@ class ShoppingItem {
   final int id;
   final int listId;
   final String name;
+
+  /// Free-form notes: product details, links to where to buy it.
+  final String description;
+
+  /// Web links found in [description], in order.
+  List<Uri> get links => extractLinks(description);
 
   /// Estimate in [currency]; 0 when unknown.
   final double expectedPrice;
@@ -60,6 +68,7 @@ class ShoppingItem {
     return {
       'shopping_list': listId,
       'name': name,
+      'description': description,
       'expected_price': expectedPrice,
       'currency': currency.code,
       'buying_goal': goal == null
@@ -73,6 +82,7 @@ class ShoppingItem {
 
   ShoppingItem copyWith({
     String? name,
+    String? description,
     double? expectedPrice,
     Currency? currency,
     DateTime? Function()? buyingGoal,
@@ -82,6 +92,7 @@ class ShoppingItem {
       id: id,
       listId: listId,
       name: name ?? this.name,
+      description: description ?? this.description,
       expectedPrice: expectedPrice ?? this.expectedPrice,
       currency: currency ?? this.currency,
       buyingGoal: buyingGoal != null ? buyingGoal() : this.buyingGoal,
@@ -145,3 +156,27 @@ List<ShoppingItem> sortItems(Iterable<ShoppingItem> items) {
     return indexed[a]!.compareTo(indexed[b]!);
   });
 }
+
+final _linkPattern = RegExp(
+  r'(?:https?://|www\.)[^\s<>"]+',
+  caseSensitive: false,
+);
+
+/// Web links in [text]: `http(s)://` and bare `www.` addresses, without
+/// trailing punctuation, duplicates dropped.
+List<Uri> extractLinks(String text) {
+  final links = <Uri>[];
+  for (final match in _linkPattern.allMatches(text)) {
+    final raw = match.group(0)!.replaceFirst(RegExp(r'[.,;:!?)\]]+$'), '');
+    final uri = Uri.tryParse(
+      raw.toLowerCase().startsWith('www.') ? 'https://$raw' : raw,
+    );
+    if (uri != null && uri.host.isNotEmpty && !links.contains(uri)) {
+      links.add(uri);
+    }
+  }
+  return links;
+}
+
+/// Short label for [uri]: its host without `www.`, e.g. "ikea.com".
+String linkLabel(Uri uri) => uri.host.replaceFirst(RegExp('^www\\.'), '');

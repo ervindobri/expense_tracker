@@ -81,6 +81,9 @@ class LocaleKeys {
   static const edit_item = 'edit_item';
   static const add_item = 'add_item';
   static const item_name_hint = 'item_name_hint';
+  static const item_description_hint = 'item_description_hint';
+  static const open_link = 'open_link';
+  static const could_not_open_link = 'could_not_open_link';
   static const expected_price = 'expected_price';
   static const buying_goal = 'buying_goal';
   static const no_goal = 'no_goal';

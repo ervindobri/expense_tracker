@@ -567,3 +567,22 @@ class ExpenseTrackerAPITests(TestCase):
         self.client.force_authenticate(user=None)
         response = self.client.get("/api/shopping-lists/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_shopping_item_description(self):
+        """Test items keep a free-form description and default to empty"""
+        shopping_list = self._shopping_list()
+        response = self.client.post(
+            "/api/shopping-items/",
+            {"shopping_list": shopping_list.id, "name": "Milk"},
+            format="json",
+        )
+        self.assertEqual(response.data["description"], "")
+        description = "Grey, 3 seats\nhttps://www.ikea.com/hu/hu/p/sofa-123/"
+        response = self.client.put(
+            f"/api/shopping-items/{response.data['id']}/",
+            {"description": description},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["description"], description)
+        self.assertEqual(response.data["name"], "Milk")

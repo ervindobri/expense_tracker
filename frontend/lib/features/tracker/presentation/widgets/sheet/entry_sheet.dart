@@ -9,6 +9,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/build_context.dart';
 import 'package:frontend/core/extensions/date_time.dart';
+import 'package:frontend/core/extensions/ref.dart';
 import 'package:frontend/core/extensions/string.dart';
 import 'package:frontend/core/extensions/text_style.dart';
 import 'package:frontend/core/helpers/arithmetic.dart';
@@ -18,8 +19,11 @@ import 'package:frontend/core/localization/locale_keys.dart';
 import 'package:frontend/core/widgets/height_crossfade.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/core/widgets/secondary_button.dart';
+import 'package:frontend/core/widgets/vertical_switcher.dart';
+import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:frontend/features/subscriptions/presentation/state/subscriptions_provider.dart';
 import 'package:frontend/features/subscriptions/presentation/widgets/subscription_picker.dart';
+import 'package:frontend/features/subscriptions/presentation/widgets/subscription_price.dart';
 import 'package:frontend/features/tracker/domain/models/category.dart';
 import 'package:frontend/features/tracker/domain/models/entry.dart';
 import 'package:frontend/features/tracker/domain/repositories/entries_repository.dart';
@@ -289,9 +293,11 @@ class EditEntryView extends HookWidget {
       if (entry != null) {
         notesController.text = entry.notes;
         subscription.value = entry.subscription;
-        amountController.text = entry.amount == entry.amount.truncateToDouble()
-            ? entry.amount.toInt().toString()
-            : entry.amount.toStringAsFixed(2);
+        // edited in the currency it was paid in
+        final paid = entry.originalAmount;
+        amountController.text = paid == paid.truncateToDouble()
+            ? paid.toInt().toString()
+            : paid.toStringAsFixed(2);
       }
       return null;
     }, [lastEditedEntry.value]);
@@ -310,8 +316,14 @@ class EditEntryView extends HookWidget {
       }
       isSaving.value = true;
       try {
+        // Only reconvert when the paid value changed, so editing the notes
+        // doesn't shift the HUF amount with today's exchange rate.
+        final paidChanged = parsedAmount != entry.originalAmount;
         final updatedEntry = entry.copyWith(
-          amount: parsedAmount,
+          amount: paidChanged
+              ? await ref.toHuf(parsedAmount, entry.currency)
+              : entry.amount,
+          originalAmount: parsedAmount,
           notes: notesController.text,
           subscription: () => subscription.value,
         );
@@ -402,7 +414,10 @@ class EditEntryView extends HookWidget {
                             ),
                           ),
                         ),
-                        Text(LocaleKeys.ft.tr(), style: textTheme.titleMedium),
+                        Text(
+                          lastEditedEntry.value!.currency.symbol,
+                          style: textTheme.titleMedium,
+                        ),
                         const Icon(LucideIcons.pencil, size: 16),
                       ],
                     ),
@@ -518,10 +533,18 @@ class EntryTotalView extends HookConsumerWidget {
     final amountController = useTextEditingController();
     final amountField = useFocusNode();
     final subscription = useState<int?>(null);
+    // Kept between entries, so several payments in one currency are quick.
+    final currency = useState(Currency.huf);
+    // Rebuild on typing so the converted hint follows the amount.
+    useListenable(amountController);
     useArithmeticEvaluation(
       amountController,
       enabled: supportsInlineArithmetic,
     );
+    final typedAmount = amountController.text.parseAmount;
+    final convertedPrice = typedAmount == null
+        ? null
+        : convertedHint(ref, typedAmount, currency.value);
 
     Future<void> submitEntry() async {
       //Save entry
@@ -545,11 +568,14 @@ class EntryTotalView extends HookConsumerWidget {
               : now;
           final entry = Entry(
             id: -1,
-            amount: amount,
+            // stored in HUF; the typed value is kept as what was paid
+            amount: await ref.toHuf(amount, currency.value),
             addedDate: entryDate.ignoringTimezone,
             category: category.id,
             createdDate: DateTime.now(),
             subscription: subscription.value,
+            currency: currency.value,
+            originalAmount: amount,
           );
           final result = await ref
               .read(entryRepositoryProvider)
@@ -685,43 +711,67 @@ class EntryTotalView extends HookConsumerWidget {
         if (!addDisabled)
           Padding(
             padding: const EdgeInsets.only(top: 32.0),
-            child: Center(
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 200,
-                    child: TextField(
-                      autofocus: true,
-                      focusNode: amountField,
-                      decoration: InputDecoration(
-                        alignLabelWithHint: true,
-                        hintText: '0.00',
-                        border: InputBorder.none,
-                        hintStyle: theme.headlineLarge?.copyWith(
-                          color: theme.headlineLarge?.color?.withAlpha(128),
+            child: Column(
+              spacing: 4,
+              children: [
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 8,
+                    children: [
+                      SizedBox(
+                        width: 200,
+                        child: TextField(
+                          autofocus: true,
+                          focusNode: amountField,
+                          decoration: InputDecoration(
+                            alignLabelWithHint: true,
+                            hintText: '0.00',
+                            border: InputBorder.none,
+                            hintStyle: theme.headlineLarge?.copyWith(
+                              color: theme.headlineLarge?.color?.withAlpha(128),
+                            ),
+                          ),
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          textInputAction: TextInputAction.send,
+                          onSubmitted: (value) {
+                            submitEntry();
+                          },
+                          inputFormatters: supportsInlineArithmetic
+                              ? [ArithmeticInputFormatter(decimalPlaces: 2)]
+                              : [
+                                  const LeadingZeroInputFormatter(),
+                                  DecimalInputFormatter(decimalPlaces: 2),
+                                ],
+                          controller: amountController,
+                          textAlign: TextAlign.center,
+                          style: theme.headlineLarge,
                         ),
                       ),
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
+                      VerticalSwitcher<Currency>(
+                        values: Currency.values,
+                        value: currency.value,
+                        onChanged: (c) => currency.value = c,
+                        labelBuilder: (c) => c.symbol,
                       ),
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: (value) {
-                        submitEntry();
-                      },
-                      inputFormatters: supportsInlineArithmetic
-                          ? [ArithmeticInputFormatter(decimalPlaces: 2)]
-                          : [
-                              const LeadingZeroInputFormatter(),
-                              DecimalInputFormatter(decimalPlaces: 2),
-                            ],
-                      controller: amountController,
-                      textAlign: TextAlign.center,
-                      style: theme.headlineLarge,
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                // "≈ 4 000 Ft" while a foreign currency is picked
+                SizedBox(
+                  height: 16,
+                  child: convertedPrice == null
+                      ? null
+                      : Text(
+                          convertedPrice,
+                          style: theme.bodySmall?.copyWith(
+                            color: Theme.of(context).hintColor,
+                          ),
+                        ),
+                ),
+              ],
             ),
           ),
         if (!addDisabled && category.isExpense)

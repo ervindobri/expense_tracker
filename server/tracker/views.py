@@ -2,8 +2,11 @@
 from django.http import HttpResponse
 from rest_framework import status, viewsets
 from rest_framework.response import Response
-from .models import Category, Entry, Subscription
-from .serializers import CategorySerializer, EntrySerializer, SubscriptionSerializer
+from .models import Category, Entry, ShoppingItem, ShoppingList, Subscription
+from .serializers import (
+    CategorySerializer, EntrySerializer, ShoppingItemSerializer, ShoppingListSerializer,
+    SubscriptionSerializer,
+)
 
 def index(request):
     return HttpResponse("Hello, world. You're at the tracker index.")
@@ -69,3 +72,36 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         subscription.is_active = False
         subscription.save(update_fields=["is_active"])
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ShoppingListViewSet(viewsets.ModelViewSet):
+    queryset = ShoppingList.objects.all()
+    serializer_class = ShoppingListSerializer
+
+    def get_queryset(self):
+        return ShoppingList.objects.prefetch_related("items").order_by("created_date")
+
+    def update(self, request, *args, **kwargs):
+        # Treat PUT like PATCH: allow updating a subset of fields.
+        kwargs["partial"] = True
+        return super().update(request, *args, **kwargs)
+
+
+class ShoppingItemViewSet(viewsets.ModelViewSet):
+    queryset = ShoppingItem.objects.all()
+    serializer_class = ShoppingItemSerializer
+
+    def get_queryset(self):
+        queryset = ShoppingItem.objects.all()
+        shopping_list = self.request.query_params.get("list")
+        if shopping_list is not None:
+            try:
+                queryset = queryset.filter(shopping_list=int(shopping_list))
+            except ValueError:
+                queryset = queryset.none()
+        return queryset.order_by("created_date")
+
+    def update(self, request, *args, **kwargs):
+        # Treat PUT like PATCH: allow updating a subset of fields.
+        kwargs["partial"] = True
+        return super().update(request, *args, **kwargs)

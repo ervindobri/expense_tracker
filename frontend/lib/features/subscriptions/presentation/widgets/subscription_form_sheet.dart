@@ -14,7 +14,8 @@ import 'package:frontend/core/helpers/arithmetic.dart';
 import 'package:frontend/core/helpers/formatters.dart';
 import 'package:frontend/core/helpers/toastification_service.dart';
 import 'package:frontend/core/localization/locale_keys.dart';
-import 'package:frontend/core/widgets/context_menu_overlay.dart';
+import 'package:frontend/core/widgets/currency_dropdown.dart';
+import 'package:frontend/core/widgets/date_picker.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/core/widgets/sheet_container.dart';
 import 'package:frontend/features/settings/domain/currency.dart';
@@ -77,10 +78,11 @@ class SubscriptionFormSheet extends HookConsumerWidget {
     Future<void> pickCreatedDate() async {
       unawaited(HapticFeedback.selectionClick());
       final today = DateTime.now();
-      final picked = await _showDatePicker(
+      final picked = await showAppDatePicker(
         context,
         initialDate: createdDate.value,
         lastDate: today,
+        helpText: LocaleKeys.created_on.tr(),
       );
       if (picked != null) {
         final current = createdDate.value;
@@ -235,7 +237,7 @@ class SubscriptionFormSheet extends HookConsumerWidget {
                         ),
                       ),
                     ),
-                    _CurrencyDropdown(
+                    CurrencyDropdown(
                       value: currency.value,
                       onChanged: (c) => currency.value = c,
                     ),
@@ -429,87 +431,6 @@ class _CreatedDateRow extends StatelessWidget {
             Icon(LucideIcons.chevronDown, size: 14, color: hint),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Material date picker restyled to the app's monochrome look.
-Future<DateTime?> _showDatePicker(
-  BuildContext context, {
-  required DateTime initialDate,
-  required DateTime lastDate,
-}) {
-  return showDatePicker(
-    context: context,
-    initialDate: initialDate.isAfter(lastDate) ? lastDate : initialDate,
-    firstDate: DateTime(2000),
-    lastDate: lastDate,
-    helpText: LocaleKeys.created_on.tr(),
-    builder: (context, child) {
-      final fluent = FluentTheme.of(context);
-      final base = Theme.of(context);
-      final scheme = fluent.brightness == Brightness.dark
-          ? const ColorScheme.dark()
-          : const ColorScheme.light();
-      return Theme(
-        data: base.copyWith(
-          colorScheme: scheme.copyWith(
-            primary: fluent.chipColor,
-            onPrimary: fluent.inverseTextColor,
-            surface: fluent.cardColor,
-            onSurface: fluent.textColor,
-          ),
-          datePickerTheme: DatePickerThemeData(
-            backgroundColor: fluent.cardColor,
-            surfaceTintColor: Colors.transparent,
-            headerForegroundColor: fluent.textColor,
-            dividerColor: fluent.dividerColor,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(32),
-            ),
-          ),
-          textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(foregroundColor: fluent.textColor),
-          ),
-        ),
-        child: child!,
-      );
-    },
-  );
-}
-
-/// Currency of the price, picked from the supported ones.
-class _CurrencyDropdown extends StatelessWidget {
-  const _CurrencyDropdown({required this.value, required this.onChanged});
-
-  final Currency value;
-  final ValueChanged<Currency> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return ContextMenuOverlay<Currency>(
-      items: Currency.values,
-      initialValue: value,
-      width: 200,
-      itemBuilder: (_, c) => Text(c.display),
-      onSelected: (c) {
-        unawaited(HapticFeedback.selectionClick());
-        onChanged(c);
-      },
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 4,
-        children: [
-          Text(value.symbol, style: textTheme.titleMedium),
-          Icon(
-            LucideIcons.chevronDown,
-            size: 14,
-            color: Theme.of(context).hintColor,
-          ),
-        ],
       ),
     );
   }

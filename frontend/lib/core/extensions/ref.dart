@@ -24,6 +24,22 @@ extension CurrencyExt on WidgetRef {
     return amount * rate;
   }
 
+  /// [amount] given in [currency], converted to HUF for saving and rounded to
+  /// 2 decimals. Reads instead of watching, so it is safe in callbacks; falls
+  /// back to the offline rate when the live one can't be fetched.
+  Future<double> toHuf(double amount, Currency currency) async {
+    if (currency == Currency.huf) {
+      return amount;
+    }
+    double rate;
+    try {
+      rate = await read(toHufRateProvider(currency).future);
+    } catch (_) {
+      rate = currency.fallbackToHuf;
+    }
+    return (amount * rate * 100).round() / 100;
+  }
+
   /// [amount] (HUF) converted and formatted with the selected currency symbol.
   String formattedAmount(double amount, {bool showDecimals = false}) {
     return convertedAmount(

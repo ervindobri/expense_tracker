@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:collection/collection.dart';
 import 'package:frontend/core/extensions/date_time.dart';
+import 'package:frontend/features/settings/domain/currency.dart';
 
 class Entry {
   Entry({
@@ -12,18 +13,23 @@ class Entry {
     required this.createdDate,
     this.notes = '',
     this.subscription,
-  });
+    this.currency = Currency.huf,
+    double? originalAmount,
+  }) : originalAmount = originalAmount ?? amount;
   factory Entry.from(Map<String, dynamic> e) {
     final category = e['category'];
+    final amount = (e['amount'] as num?)?.toDouble() ?? 0.0;
     return Entry(
       id: e['id'] ?? 0,
-      amount: (e['amount'] as num?)?.toDouble() ?? 0.0,
+      amount: amount,
       // the API may send the category as its id or as the nested object
       category: category is Map ? category['id'] ?? 0 : category ?? 0,
       addedDate: DateTime.parse(e['added_date'] ?? '').ignoringTimezone,
       notes: e['notes'] ?? '',
       createdDate: DateTime.parse(e['created_date'] ?? '').ignoringTimezone,
       subscription: e['subscription'] as int?,
+      currency: CurrencyCode.fromCode(e['currency']),
+      originalAmount: (e['original_amount'] as num?)?.toDouble() ?? amount,
     );
   }
   final int id;
@@ -36,6 +42,13 @@ class Entry {
   /// Id of the subscription this entry pays for, if any.
   final int? subscription;
 
+  /// Currency the entry was paid in. [amount] is always HUF, so totals never
+  /// need converting; [originalAmount] is the value in [currency].
+  final Currency currency;
+  final double originalAmount;
+
+  bool get isForeignCurrency => currency != Currency.huf;
+
   Map<String, dynamic> toJson() {
     return {
       'amount': amount,
@@ -44,6 +57,8 @@ class Entry {
       'notes': notes,
       'created_date': DateTime.now().toIso8601String(),
       'subscription': subscription,
+      'currency': currency.code,
+      'original_amount': originalAmount,
     };
   }
 
@@ -53,6 +68,8 @@ class Entry {
     double? amount,
     String? notes,
     int? Function()? subscription,
+    Currency? currency,
+    double? originalAmount,
   }) {
     return Entry(
       id: id ?? this.id,
@@ -62,6 +79,8 @@ class Entry {
       notes: notes ?? this.notes,
       createdDate: createdDate,
       subscription: subscription != null ? subscription() : this.subscription,
+      currency: currency ?? this.currency,
+      originalAmount: originalAmount ?? this.originalAmount,
     );
   }
 }

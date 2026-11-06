@@ -41,7 +41,7 @@ final class LoggingReminderProvider
   }
 }
 
-String _$loggingReminderHash() => r'd0ad2a73c1d17670fa87557c02f544416a16f987';
+String _$loggingReminderHash() => r'c3abae146854d4a07a305176ecb6e5e2c6adf142';
 
 abstract class _$LoggingReminder extends $Notifier<ReminderFrequency> {
   ReminderFrequency build();

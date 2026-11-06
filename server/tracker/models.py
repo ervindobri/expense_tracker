@@ -106,7 +106,33 @@ class Entry(models.Model):
         blank=True,
         related_name="entries",
     )
+    # What was actually paid. `amount` stays in HUF so totals never need a
+    # conversion; these keep the original currency and value next to it.
+    currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.HUF)
+    original_amount = models.FloatField(null=True, blank=True)
 
 
 
 # Total balance: income, expenses, saved will be calculated from all entries filtered by date
+
+# Named checklist of things to buy (groceries, house...).
+class ShoppingList(models.Model):
+    name = models.CharField(max_length=100)
+    created_date = models.DateTimeField("date list was created", default=timezone.now)
+
+
+# Something to buy, checked off once bought.
+class ShoppingItem(models.Model):
+    shopping_list = models.ForeignKey(
+        ShoppingList,
+        on_delete=models.CASCADE,
+        related_name="items",
+    )
+    name = models.CharField(max_length=100)
+    # estimate in `currency`
+    expected_price = models.FloatField(default=0)
+    currency = models.CharField(max_length=3, choices=Currency.choices, default=Currency.HUF)
+    # day it should be bought by, if any
+    buying_goal = models.DateField(null=True, blank=True)
+    is_bought = models.BooleanField(default=False)
+    created_date = models.DateTimeField("date item was created", default=timezone.now)

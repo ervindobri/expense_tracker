@@ -15,6 +15,7 @@ import 'package:frontend/core/widgets/animated_indexed_stack.dart';
 import 'package:frontend/core/widgets/liquid_tabbar.dart';
 import 'package:frontend/core/widgets/primary_button.dart';
 import 'package:frontend/features/settings/presentation/settings_screen.dart';
+import 'package:frontend/features/shopping/presentation/shopping_lists_screen.dart';
 import 'package:frontend/features/stats/presentation/stats_screen.dart';
 import 'package:frontend/features/subscriptions/presentation/subscriptions_screen.dart';
 import 'package:frontend/features/tracker/presentation/state/balance_provider.dart';
@@ -134,7 +135,7 @@ class HomeShell extends HookConsumerWidget {
       items: [
         LiquidGlassTabItem(icon: LucideIcons.home, label: LocaleKeys.home.tr()),
         LiquidGlassTabItem(
-          icon: LucideIcons.calendarSync,
+          icon: LucideIcons.repeat2,
           label: LocaleKeys.subscriptions.tr(),
         ),
         LiquidGlassTabItem(
@@ -184,9 +185,16 @@ class HomeShell extends HookConsumerWidget {
 
     return Scaffold(
       backgroundColor: FluentTheme.of(context).scaffoldBackgroundColor,
-      floatingActionButton: isReady && balance.value?.incomes == 0.0
-          ? PrimaryButton(onPressed: () {}, label: LocaleKeys.add_income.tr())
-          : const SizedBox(),
+      floatingActionButton: isReady
+          ? FloatingActionButton(
+              tooltip: LocaleKeys.shopping_lists.tr(),
+              backgroundColor: FluentTheme.of(context).chipColor,
+              foregroundColor: FluentTheme.of(context).inverseTextColor,
+              shape: const CircleBorder(),
+              onPressed: () => openShoppingLists(context),
+              child: const Icon(LucideIcons.shoppingCart),
+            )
+          : null,
       extendBody: true,
       bottomNavigationBar: useSideNav ? null : navBar(),
       body: useSideNav

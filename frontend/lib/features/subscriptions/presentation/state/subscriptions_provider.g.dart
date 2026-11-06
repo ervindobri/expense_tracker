@@ -244,4 +244,4 @@ final class SubscriptionSummaryProvider
 }
 
 String _$subscriptionSummaryHash() =>
-    r'694515c6a11ac9173e822e9c76a74ed816d945fc';
+    r'b107aa657df9bd7493c645370a9995c6d2f97764';

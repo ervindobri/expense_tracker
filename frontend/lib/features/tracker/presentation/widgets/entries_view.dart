@@ -274,7 +274,7 @@ class EntriesView extends HookConsumerWidget {
                     child: Row(
                       children: [
                         SizedBox(
-                          height: 48,
+                          height: 64,
                           child: AnimatedCrossFade(
                             duration: kThemeAnimationDuration,
                             crossFadeState:
@@ -287,112 +287,138 @@ class EntriesView extends HookConsumerWidget {
                                 style: theme.headlineSmall,
                               ),
                             ),
-                            firstChild: ListView.separated(
-                              controller: scrollController,
-                              itemCount: 6,
-                              shrinkWrap: true,
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 8.0,
-                              ),
-                              scrollDirection: Axis.horizontal,
-                              separatorBuilder: (_, int index) {
-                                return const SizedBox(
-                                  width: kIsWeb ? 24.0 : 12.0,
-                                );
-                              },
-                              itemBuilder: (_, int index) {
-                                final bool isSelected = week.value == index + 1;
-                                return AnimatedScale(
-                                  scale: isSelected ? 1.2 : 1.0,
-                                  duration: const Duration(milliseconds: 150),
-                                  child: Material(
-                                    surfaceTintColor: Colors.transparent,
-                                    elevation: 0,
-                                    color: isSelected && kIsWeb
-                                        ? FluentTheme.of(context).chipColor
-                                        : Colors.transparent,
-                                    borderRadius: BorderRadius.circular(99),
-                                    child: InkWell(
-                                      splashColor: Colors.transparent,
-                                      highlightColor: Colors.transparent,
-                                      borderRadius: BorderRadius.circular(12),
-                                      onTap: () {
-                                        if (index == 5) {
-                                          week.value = index + 1;
-                                          isTotal.value = true;
-                                        } else {
-                                          week.value = index + 1;
-                                          isTotal.value = false;
-                                        }
+                            firstChild: SizedBox(
+                              width: context.width,
+                              child: ListView.separated(
+                                controller: scrollController,
+                                itemCount: 6,
+                                shrinkWrap: true,
+                                physics: const AlwaysScrollableScrollPhysics(),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                  vertical: 8.0,
+                                ),
+                                scrollDirection: Axis.horizontal,
+                                separatorBuilder: (_, int index) {
+                                  return const SizedBox(
+                                    width: kIsWeb ? 24.0 : 12.0,
+                                  );
+                                },
+                                itemBuilder: (_, int index) {
+                                  final bool isSelected =
+                                      week.value == index + 1;
+                                  return AnimatedScale(
+                                    scale: isSelected ? 1.2 : 1.0,
+                                    duration: const Duration(milliseconds: 150),
+                                    child: Material(
+                                      surfaceTintColor: Colors.transparent,
+                                      elevation: 0,
+                                      color: isSelected && kIsWeb
+                                          ? FluentTheme.of(context).chipColor
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(99),
+                                      child: InkWell(
+                                        splashColor: Colors.transparent,
+                                        highlightColor: Colors.transparent,
+                                        borderRadius: BorderRadius.circular(12),
+                                        onTap: () {
+                                          if (index == 5) {
+                                            week.value = index + 1;
+                                            isTotal.value = true;
+                                          } else {
+                                            week.value = index + 1;
+                                            isTotal.value = false;
+                                          }
 
-                                        const int itemCount = 6;
-                                        final double maxExtent =
-                                            scrollController
-                                                .position
-                                                .maxScrollExtent;
-                                        final double itemExtent =
-                                            maxExtent /
-                                            (itemCount -
-                                                1); // distance between each item's scroll position
-                                        final double offset =
-                                            (itemExtent * index).clamp(
-                                              0.0,
-                                              maxExtent,
-                                            );
+                                          const int itemCount = 6;
+                                          final double maxExtent =
+                                              scrollController
+                                                  .position
+                                                  .maxScrollExtent;
+                                          final double itemExtent =
+                                              maxExtent /
+                                              (itemCount -
+                                                  1); // distance between each item's scroll position
+                                          final double offset =
+                                              (itemExtent * index).clamp(
+                                                0.0,
+                                                maxExtent,
+                                              );
 
-                                        scrollController.animateTo(
-                                          offset,
-                                          duration: Durations.short2,
-                                          curve: Curves.easeIn,
-                                        );
-                                        unawaited(HapticFeedback.lightImpact());
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 2.0,
-                                          horizontal: 4.0,
-                                        ),
-                                        child: Center(
-                                          child: AnimatedSwitcher(
-                                            duration: Durations.short1,
-                                            child: Text(
-                                              key: ValueKey<int>(index),
-                                              (month == currentMonth &&
-                                                          currentWeek ==
-                                                              index + 1
-                                                      ? '⏰'
-                                                      : '') +
-                                                  (index == 5
-                                                      ? LocaleKeys.total.tr()
-                                                      : LocaleKeys.week.tr(
-                                                          namedArgs: {
-                                                            'value':
-                                                                '${index + 1}',
-                                                          },
-                                                        )),
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .bodyLarge
-                                                  ?.copyWith(
-                                                    color: isSelected && kIsWeb
-                                                        ? FluentTheme.of(
-                                                            context,
-                                                          ).inverseTextColor
-                                                        : null,
-                                                    fontWeight: isSelected
-                                                        ? FontWeight.w700
-                                                        : FontWeight.w300,
+                                          scrollController.animateTo(
+                                            offset,
+                                            duration: Durations.short2,
+                                            curve: Curves.easeIn,
+                                          );
+                                          unawaited(
+                                            HapticFeedback.lightImpact(),
+                                          );
+                                        },
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 2.0,
+                                            horizontal: 4.0,
+                                          ),
+                                          child: Center(
+                                            child: AnimatedSwitcher(
+                                              duration: Durations.short1,
+                                              child: Column(
+                                                key: ValueKey<int>(index),
+                                                children: [
+                                                  Text(
+                                                    (month == currentMonth &&
+                                                                currentWeek ==
+                                                                    index + 1
+                                                            ? '⏰'
+                                                            : '') +
+                                                        (index == 5
+                                                            ? LocaleKeys.total
+                                                                  .tr()
+                                                            : LocaleKeys.week.tr(
+                                                                namedArgs: {
+                                                                  'value':
+                                                                      '${index + 1}',
+                                                                },
+                                                              )),
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .bodyLarge
+                                                        ?.copyWith(
+                                                          color:
+                                                              isSelected &&
+                                                                  kIsWeb
+                                                              ? FluentTheme.of(
+                                                                  context,
+                                                                ).inverseTextColor
+                                                              : null,
+                                                          fontWeight: isSelected
+                                                              ? FontWeight.w700
+                                                              : FontWeight.w300,
+                                                        ),
                                                   ),
+                                                  if (index < 5)
+                                                    Text(
+                                                      '${(index + 1).weekLimits.$1}-${(index + 1).weekLimits.$2}',
+                                                      style: context.bodySmall
+                                                          ?.copyWith(
+                                                            color: context
+                                                                .bodySmall
+                                                                ?.color
+                                                                ?.withValues(
+                                                                  alpha: 0.5,
+                                                                ),
+                                                          ),
+                                                    ),
+                                                ],
+                                              ),
                                             ),
                                           ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                );
-                              },
+                                  );
+                                },
+                              ),
                             ),
                           ),
                         ),
@@ -1033,10 +1059,29 @@ class EntryCard extends HookConsumerWidget {
                     ),
                   ],
                 ),
-                Text(
-                  (isExpense ? '-' : '+') +
-                      entry.amount.formatCurrencySymbol(showDecimals: true),
-                  style: TextTheme.of(context).bodyLarge,
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      (isExpense ? '-' : '+') +
+                          entryState.value.amount.formatCurrencySymbol(
+                            showDecimals: true,
+                          ),
+                      style: TextTheme.of(context).bodyLarge,
+                    ),
+                    // what was actually paid, e.g. "12,50 €"
+                    if (entryState.value.isForeignCurrency)
+                      Text(
+                        entryState.value.originalAmount.formatCurrencySymbol(
+                          showDecimals: true,
+                          symbol: entryState.value.currency.symbol,
+                        ),
+                        style: TextTheme.of(context).bodySmall?.copyWith(
+                          color: Theme.of(context).hintColor,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),

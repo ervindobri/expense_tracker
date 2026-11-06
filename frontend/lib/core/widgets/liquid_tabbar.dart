@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+
 import 'package:fluent_ui/fluent_ui.dart' hide Colors;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
@@ -75,6 +76,9 @@ class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
   var xPosition = 0.0;
   var selectedIndex = 0;
 
+  /// Squishes the indicator pill while it is being dragged.
+  var isDragging = false;
+
   @override
   void initState() {
     selectedIndex = widget.currentIndex;
@@ -95,131 +99,162 @@ class _LiquidGlassTabBarState extends State<LiquidGlassTabBar> {
       fit: BoxFit.scaleDown,
       child: Padding(
         padding: widget.margin,
-        child: SizedBox(
-          height: isVertical ? barLength : widget.height,
-          width: isVertical ? widget.height : barLength,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(radius),
-            child: BackdropFilter(
-              filter: ImageFilter.blur(
-                sigmaX: widget.blurSigma,
-                sigmaY: widget.blurSigma,
-              ),
-              child: Material(
-                color: FluentTheme.of(
-                  context,
-                ).scaffoldBackgroundColor.withValues(alpha: 0.35),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(radius),
-                    border: GradientBoxBorder(
-                      width: 0.5,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: FluentTheme.of(context).gradientBorderColors2,
-                      ),
-                    ),
+        child: TweenAnimationBuilder<double>(
+          tween: Tween(end: isDragging ? 1.025 : 1.0),
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.bounceInOut,
+          builder: (context, squishH, child) => TweenAnimationBuilder<double>(
+            tween: Tween(end: isDragging ? 0.925 : 1.0),
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.bounceInOut,
+            builder: (context, squish, child) => Transform.scale(
+              scaleX: isVertical ? 1.0 : squishH,
+              scaleY: isVertical ? 1.0 : squish,
+              child: child,
+            ),
+            child: SizedBox(
+              height: isVertical ? barLength : widget.height,
+              width: isVertical ? widget.height : barLength,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(radius),
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(
+                    sigmaX: widget.blurSigma,
+                    sigmaY: widget.blurSigma,
                   ),
-                  child: Builder(
-                    builder: (_) {
-                      const pillInset = 8.0;
-                      const pillWidth = itemWidth - pillInset * 2;
-                      final pillHeight = widget.height - 14;
+                  child: Material(
+                    color: FluentTheme.of(
+                      context,
+                    ).scaffoldBackgroundColor.withValues(alpha: 0.35),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(radius),
+                        border: GradientBoxBorder(
+                          width: 0.5,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: FluentTheme.of(
+                              context,
+                            ).gradientBorderColors2,
+                          ),
+                        ),
+                      ),
+                      child: Builder(
+                        builder: (_) {
+                          const pillInset = 8.0;
+                          const pillWidth = itemWidth - pillInset * 2;
+                          final pillHeight = widget.height - 14;
 
-                      void snapBack() {
-                        if (xPosition > 0) {
-                          // dragging
-                          final snapToIndex = (xPosition ~/ (itemWidth / 2))
-                              .clamp(0, widget.items.length - 1);
-                          widget.onTap(snapToIndex);
-                          setState(() {
-                            xPosition = itemWidth * snapToIndex;
-                            selectedIndex = snapToIndex;
-                          });
-                        } else {
-                          setState(() {
-                            xPosition = 0.0;
-                            selectedIndex = 0;
-                          });
-                        }
-                      }
+                          void snapBack() {
+                            // xPosition is the pill's leading edge, so the
+                            // tab it covers most is the nearest whole step.
+                            final snapToIndex = (xPosition / itemWidth)
+                                .round()
+                                .clamp(0, widget.items.length - 1);
+                            widget.onTap(snapToIndex);
+                            setState(() {
+                              xPosition = itemWidth * snapToIndex;
+                              selectedIndex = snapToIndex;
+                              isDragging = false;
+                            });
+                          }
 
-                      return GestureDetector(
-                        onPanUpdate: (tapInfo) {
-                          setState(() {
-                            xPosition += isVertical
-                                ? tapInfo.delta.dy
-                                : tapInfo.delta.dx;
-                          });
-                        },
-                        onPanCancel: () {
-                          snapBack();
-                        },
-                        onPanEnd: (details) {
-                          snapBack();
-                        },
-                        onTapCancel: () => snapBack(),
-                        child: Stack(
-                          children: [
-                            // Sliding indicator pill.
-                            AnimatedPositioned(
-                              duration: const Duration(milliseconds: 250),
-                              curve: Curves.easeOutBack,
-                              left: isVertical
-                                  ? (widget.height - pillHeight) / 2
-                                  : xPosition + pillInset,
-                              top: isVertical
-                                  ? xPosition + pillInset
-                                  : (widget.height - pillHeight) / 2,
-                              width: isVertical ? pillHeight : pillWidth,
-                              height: isVertical ? pillWidth : pillHeight,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(
-                                    pillHeight / 2,
-                                  ),
-                                  color: widget.indicatorColor,
-                                  border: Border.all(
-                                    color: Colors.white.withValues(
-                                      alpha: isDark ? 0.25 : 0.6,
+                          return GestureDetector(
+                            onPanStart: (_) {
+                              setState(() => isDragging = true);
+                            },
+                            onPanUpdate: (tapInfo) {
+                              setState(() {
+                                xPosition += isVertical
+                                    ? tapInfo.delta.dy
+                                    : tapInfo.delta.dx;
+                              });
+                            },
+                            onPanCancel: () {
+                              snapBack();
+                            },
+                            onPanEnd: (details) {
+                              snapBack();
+                            },
+                            onTapCancel: () => snapBack(),
+                            child: Stack(
+                              children: [
+                                // Sliding indicator pill.
+                                AnimatedPositioned(
+                                  duration: const Duration(milliseconds: 250),
+                                  curve: Curves.easeOutBack,
+                                  left: isVertical
+                                      ? (widget.height - pillHeight) / 2
+                                      : xPosition + pillInset,
+                                  top: isVertical
+                                      ? xPosition + pillInset
+                                      : (widget.height - pillHeight) / 2,
+                                  width: isVertical ? pillHeight : pillWidth,
+                                  height: isVertical ? pillWidth : pillHeight,
+                                  // Squish across the drag direction; easeOutBack
+                                  // gives a small bounce when it is released.
+                                  child: TweenAnimationBuilder<double>(
+                                    tween: Tween(end: isDragging ? 0.95 : 1.0),
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.easeOutBack,
+                                    builder: (context, squish, child) =>
+                                        Transform.scale(
+                                          scaleX: isVertical ? squish : 1.0,
+                                          scaleY: isVertical ? 1.0 : squish,
+                                          child: child,
+                                        ),
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(
+                                          pillHeight / 2,
+                                        ),
+                                        color: widget.indicatorColor,
+                                        border: Border.all(
+                                          color: Colors.white.withValues(
+                                            alpha: isDark ? 0.25 : 0.6,
+                                          ),
+                                          width: 0.75,
+                                        ),
+                                      ),
                                     ),
-                                    width: 0.75,
                                   ),
                                 ),
-                              ),
+                                // Tab buttons.
+                                Flex(
+                                  direction: widget.axis,
+                                  children: List.generate(widget.items.length, (
+                                    index,
+                                  ) {
+                                    final selected = index == selectedIndex;
+                                    final item = widget.items[index];
+                                    return SizedBox(
+                                      width: isVertical ? null : itemWidth,
+                                      height: isVertical ? itemWidth : null,
+                                      child: _TabButton(
+                                        item: item,
+                                        selected: selected,
+                                        isDark: isDark,
+                                        onTap: () {
+                                          widget.onTap(index);
+                                          setState(() {
+                                            selectedIndex = index;
+                                            xPosition = itemWidth * index;
+                                          });
+                                          unawaited(
+                                            HapticFeedback.lightImpact(),
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  }),
+                                ),
+                              ],
                             ),
-                            // Tab buttons.
-                            Flex(
-                              direction: widget.axis,
-                              children: List.generate(widget.items.length, (
-                                index,
-                              ) {
-                                final selected = index == selectedIndex;
-                                final item = widget.items[index];
-                                return SizedBox(
-                                  width: isVertical ? null : itemWidth,
-                                  height: isVertical ? itemWidth : null,
-                                  child: _TabButton(
-                                    item: item,
-                                    selected: selected,
-                                    isDark: isDark,
-                                    onTap: () {
-                                      widget.onTap(index);
-                                      setState(() {
-                                        selectedIndex = index;
-                                        xPosition = itemWidth * index;
-                                      });
-                                      unawaited(HapticFeedback.lightImpact());
-                                    },
-                                  ),
-                                );
-                              }),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ),

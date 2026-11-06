@@ -6,7 +6,9 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from rest_framework.test import APIClient
 from rest_framework import status
 from rest_framework.authtoken.models import Token
-from .models import Category, CategoryType, Entry, Subscription, SubscriptionPeriod
+from .models import (
+    Category, CategoryType, Entry, ShoppingItem, ShoppingList, Subscription, SubscriptionPeriod,
+)
 from .serializers import CategorySerializer, EntrySerializer
 import datetime
 
@@ -133,6 +135,66 @@ class ExpenseTrackerAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data["notes"], "Dinner with friends")
 
+    def test_entry_defaults_to_huf(self):
+        """An entry created without a currency is HUF, paid at its amount"""
+        data = {
+            "amount": 75.00,
+            "category": self.expense_category.id,
+            "added_date": datetime.datetime.now().isoformat()
+        }
+        response = self.client.post("/api/entries/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["currency"], "HUF")
+        self.assertEqual(response.data["original_amount"], 75.00)
+
+    def test_entry_create_in_foreign_currency(self):
+        """The HUF amount and the original value are stored side by side"""
+        data = {
+            "amount": 4000.00,
+            "category": self.expense_category.id,
+            "added_date": datetime.datetime.now().isoformat(),
+            "currency": "EUR",
+            "original_amount": 10.00,
+        }
+        response = self.client.post("/api/entries/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        entry = Entry.objects.get(id=response.data["id"])
+        self.assertEqual(entry.amount, 4000.00)
+        self.assertEqual(entry.currency, "EUR")
+        self.assertEqual(entry.original_amount, 10.00)
+
+    def test_entry_create_invalid_currency(self):
+        """Unknown currency codes are rejected"""
+        data = {
+            "amount": 10.00,
+            "category": self.expense_category.id,
+            "added_date": datetime.datetime.now().isoformat(),
+            "currency": "GBP",
+        }
+        response = self.client.post("/api/entries/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_entry_update_amount_keeps_huf_original_in_step(self):
+        """Updating only the amount of a HUF entry updates what was paid too"""
+        response = self.client.put(f"/api/entries/{self.entry.id}/", {"amount": 200.00}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["original_amount"], 200.00)
+
+    def test_entry_update_amount_keeps_foreign_original(self):
+        """Updating only the amount of a EUR entry leaves its original value alone"""
+        self.entry.currency = "EUR"
+        self.entry.original_amount = 1.00
+        self.entry.save()
+        response = self.client.put(f"/api/entries/{self.entry.id}/", {"amount": 420.00}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["original_amount"], 1.00)
+
+    def test_entry_without_original_amount_reads_as_amount(self):
+        """Rows saved before the field existed report their amount"""
+        Entry.objects.filter(id=self.entry.id).update(original_amount=None)
+        response = self.client.get(f"/api/entries/{self.entry.id}/")
+        self.assertEqual(response.data["original_amount"], 100.50)
+
     def test_entry_update(self):
         """Test updating an existing entry"""
         data = {"amount": 150.75}
@@ -234,7 +296,7 @@ class ExpenseTrackerAPITests(TestCase):
     def test_entry_serializer_fields(self):
         """Test that EntrySerializer includes all required fields"""
         serializer = EntrySerializer(self.entry)
-        expected_fields = ["id", "amount", "category", "added_date", "notes", "created_date", "subscription"]
+        expected_fields = ["id", "amount", "category", "added_date", "notes", "created_date", "subscription", "currency", "original_amount"]
         self.assertEqual(set(serializer.fields.keys()), set(expected_fields))
 
     def test_category_serializer_validation(self):
@@ -393,4 +455,115 @@ class ExpenseTrackerAPITests(TestCase):
         """Test subscriptions are reachable without credentials like entries"""
         self.client.force_authenticate(user=None)
         response = self.client.get("/api/subscriptions/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    # ==================== Shopping List Tests ====================
+
+    def _shopping_list(self, name="House"):
+        return ShoppingList.objects.create(name=name)
+
+    def test_shopping_list_create(self):
+        """Test creating a shopping list starts empty"""
+        response = self.client.post("/api/shopping-lists/", {"name": "Groceries"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["name"], "Groceries")
+        self.assertEqual(response.data["items"], [])
+
+    def test_shopping_list_rename(self):
+        """Test renaming a list with a partial PUT"""
+        shopping_list = self._shopping_list()
+        response = self.client.put(
+            f"/api/shopping-lists/{shopping_list.id}/", {"name": "Home"}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["name"], "Home")
+
+    def test_shopping_list_delete_removes_items(self):
+        """Test deleting a list deletes its items"""
+        shopping_list = self._shopping_list()
+        ShoppingItem.objects.create(shopping_list=shopping_list, name="Sofa")
+        response = self.client.delete(f"/api/shopping-lists/{shopping_list.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(ShoppingItem.objects.exists())
+
+    def test_shopping_item_create(self):
+        """Test adding an item with a price and a buying goal"""
+        shopping_list = self._shopping_list()
+        data = {
+            "shopping_list": shopping_list.id,
+            "name": "Sofa",
+            "expected_price": 250000,
+            "buying_goal": "2026-12-24",
+        }
+        response = self.client.post("/api/shopping-items/", data, format="json")
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["expected_price"], 250000)
+        self.assertEqual(response.data["buying_goal"], "2026-12-24")
+        self.assertEqual(response.data["currency"], "HUF")
+        self.assertFalse(response.data["is_bought"])
+
+    def test_shopping_item_without_goal(self):
+        """Test the buying goal and price are optional"""
+        shopping_list = self._shopping_list()
+        response = self.client.post(
+            "/api/shopping-items/",
+            {"shopping_list": shopping_list.id, "name": "Milk"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertIsNone(response.data["buying_goal"])
+        self.assertEqual(response.data["expected_price"], 0)
+
+    def test_shopping_item_requires_list(self):
+        """Test an item can't be created without a list"""
+        response = self.client.post("/api/shopping-items/", {"name": "Milk"}, format="json")
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_shopping_item_mark_bought(self):
+        """Test checking an item off with a partial PUT"""
+        item = ShoppingItem.objects.create(shopping_list=self._shopping_list(), name="Lamp")
+        response = self.client.put(
+            f"/api/shopping-items/{item.id}/", {"is_bought": True}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["is_bought"])
+        self.assertEqual(response.data["name"], "Lamp")
+
+    def test_shopping_item_delete(self):
+        """Test deleting an item"""
+        item = ShoppingItem.objects.create(shopping_list=self._shopping_list(), name="Lamp")
+        response = self.client.delete(f"/api/shopping-items/{item.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(ShoppingItem.objects.exists())
+
+    def test_shopping_list_items_order(self):
+        """Test items come to-buy first, by soonest goal, goal-less last"""
+        shopping_list = self._shopping_list()
+        ShoppingItem.objects.create(shopping_list=shopping_list, name="Bought", is_bought=True)
+        ShoppingItem.objects.create(shopping_list=shopping_list, name="No goal")
+        ShoppingItem.objects.create(
+            shopping_list=shopping_list, name="Later", buying_goal=datetime.date(2027, 3, 1)
+        )
+        ShoppingItem.objects.create(
+            shopping_list=shopping_list, name="Soon", buying_goal=datetime.date(2026, 12, 1)
+        )
+        response = self.client.get(f"/api/shopping-lists/{shopping_list.id}/")
+        names = [i["name"] for i in response.data["items"]]
+        self.assertEqual(names, ["Soon", "Later", "No goal", "Bought"])
+
+    def test_shopping_items_filter_by_list(self):
+        """Test filtering items by their list"""
+        house = self._shopping_list("House")
+        groceries = self._shopping_list("Groceries")
+        ShoppingItem.objects.create(shopping_list=house, name="Sofa")
+        ShoppingItem.objects.create(shopping_list=groceries, name="Milk")
+        response = self.client.get(f"/api/shopping-items/?list={groceries.id}")
+        self.assertEqual([i["name"] for i in response.data], ["Milk"])
+        response = self.client.get("/api/shopping-items/?list=abc")
+        self.assertEqual(response.data, [])
+
+    def test_shopping_open_without_token(self):
+        """Test shopping lists are reachable without credentials like entries"""
+        self.client.force_authenticate(user=None)
+        response = self.client.get("/api/shopping-lists/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)

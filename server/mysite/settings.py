@@ -154,6 +154,11 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'  # collectstatic target, served by whitenoise
+
+# Uploaded files (shopping item photos). In Docker they live next to the
+# database on the mounted volume (DJANGO_MEDIA_ROOT=/data/media).
+MEDIA_URL = 'media/'
+MEDIA_ROOT = Path(os.environ.get('DJANGO_MEDIA_ROOT', BASE_DIR / 'media'))
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 

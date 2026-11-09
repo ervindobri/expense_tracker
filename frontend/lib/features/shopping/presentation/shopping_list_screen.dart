@@ -77,15 +77,53 @@ class ShoppingListScreen extends ConsumerWidget {
       child: Text(text, style: textTheme.bodyLarge.bold),
     );
 
-    SliverPadding items(List<ShoppingItem> items) => SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      sliver: SliverList.separated(
-        itemCount: items.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 8),
-        itemBuilder: (_, i) =>
-            ShoppingItemTile(key: ValueKey(items[i].id), item: items[i]),
-      ),
-    );
+    // Each section is dragged on its own; the whole list's order is saved,
+    // so an item ticked back off returns to where it was.
+    Future<void> reorder(bool inToBuy, int oldIndex, int newIndex) async {
+      final section = [...(inToBuy ? toBuy : bought)];
+      if (newIndex == oldIndex) {
+        return;
+      }
+      section.insert(newIndex, section.removeAt(oldIndex));
+      final ordered = inToBuy
+          ? [...section, ...bought]
+          : [...toBuy, ...section];
+      try {
+        await ref.read(shoppingListsProvider.notifier).reorderItems(list.id, [
+          for (final i in ordered) i.id,
+        ]);
+      } catch (e) {
+        if (context.mounted) {
+          showShoppingError(context, e);
+        }
+      }
+    }
+
+    Widget items(List<ShoppingItem> items, {required bool inToBuy}) =>
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          sliver: SliverReorderableList(
+            itemCount: items.length,
+            onReorderStart: (_) => unawaited(HapticFeedback.selectionClick()),
+            onReorderItem: (from, to) => reorder(inToBuy, from, to),
+            proxyDecorator: (child, _, animation) => AnimatedBuilder(
+              animation: animation,
+              builder: (_, child) => Transform.scale(
+                scale: 1 + 0.02 * Curves.easeOut.transform(animation.value),
+                child: child,
+              ),
+              child: Material(type: MaterialType.transparency, child: child),
+            ),
+            itemBuilder: (_, i) => ReorderableDelayedDragStartListener(
+              key: ValueKey(items[i].id),
+              index: i,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ShoppingItemTile(item: items[i], dragIndex: i),
+              ),
+            ),
+          ),
+        );
 
     return Scaffold(
       backgroundColor: background,
@@ -144,7 +182,7 @@ class ShoppingListScreen extends ConsumerWidget {
                         '${LocaleKeys.to_buy.tr()} (${toBuy.length})',
                       ),
                     ),
-                    items(toBuy),
+                    items(toBuy, inToBuy: true),
                   ],
                   if (bought.isNotEmpty) ...[
                     SliverToBoxAdapter(
@@ -152,7 +190,7 @@ class ShoppingListScreen extends ConsumerWidget {
                         '${LocaleKeys.bought.tr()} (${bought.length})',
                       ),
                     ),
-                    items(bought),
+                    items(bought, inToBuy: false),
                   ],
                   const SliverToBoxAdapter(child: SizedBox(height: 48)),
                 ],

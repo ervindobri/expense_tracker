@@ -33,6 +33,7 @@ configs:
               "/api-auth": {"Proxy": "http://127.0.0.1:8000/api-auth"},
               "/admin": {"Proxy": "http://127.0.0.1:8000/admin"},
               "/static": {"Proxy": "http://127.0.0.1:8000/static"},
+              "/media": {"Proxy": "http://127.0.0.1:8000/media"},
               "/": {"Proxy": "http://127.0.0.1:8080"}
             }
           }
@@ -90,7 +91,7 @@ services:
       # only needed once a web frontend runs on a *different* origin:
       # - DJANGO_CORS_ALLOWED_ORIGINS=https://frontend.EDIT-ME.ts.net
     volumes:
-      - /mnt/Main/apps/expense-tracker/data:/data   # sqlite database
+      - /mnt/Main/apps/expense-tracker/data:/data   # sqlite database + uploaded photos
     depends_on:
       tailscale:
         condition: service_healthy

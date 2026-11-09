@@ -18,9 +18,10 @@ COPY server/ server/
 WORKDIR /repo/server
 
 
-# sqlite + static live here; mount a dataset over it in production
+# sqlite + uploaded photos live here; mount a dataset over it in production
 RUN mkdir -p /data
-ENV DJANGO_DB_PATH=/data/db.sqlite3
+ENV DJANGO_DB_PATH=/data/db.sqlite3 \
+    DJANGO_MEDIA_ROOT=/data/media
 
 EXPOSE 8000
 

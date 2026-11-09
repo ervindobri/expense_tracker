@@ -1,4 +1,8 @@
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.db import models
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -137,4 +141,38 @@ class ShoppingItem(models.Model):
     # day it should be bought by, if any
     buying_goal = models.DateField(null=True, blank=True)
     is_bought = models.BooleanField(default=False)
+    # order within its list, set by the user; lowest first
+    position = models.PositiveIntegerField(default=0)
     created_date = models.DateTimeField("date item was created", default=timezone.now)
+
+
+# Most a single item can hold, and the largest file accepted.
+MAX_ITEM_IMAGES = 10
+MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
+
+def _validate_image_size(file):
+    if file.size > MAX_IMAGE_BYTES:
+        raise ValidationError(f"Images can be at most {MAX_IMAGE_BYTES // (1024 * 1024)} MB.")
+
+
+# Photo attached to an item's description (the product, a screenshot of it).
+# The file lives under MEDIA_ROOT and is served at its `image.url`.
+class ShoppingItemImage(models.Model):
+    item = models.ForeignKey(ShoppingItem, on_delete=models.CASCADE, related_name="images")
+    # ImageField has Pillow check the upload really is an image, so nothing
+    # else (HTML, scripts) gets served from the app's origin.
+    image = models.ImageField(
+        upload_to="shopping/%Y/%m/",
+        validators=[
+            FileExtensionValidator(["jpg", "jpeg", "png", "gif", "webp"]),
+            _validate_image_size,
+        ],
+    )
+    created_date = models.DateTimeField("date image was added", default=timezone.now)
+
+
+@receiver(post_delete, sender=ShoppingItemImage)
+def _delete_image_file(sender, instance, **kwargs):
+    # also runs for images removed with their item or list
+    instance.image.delete(save=False)

@@ -21,6 +21,15 @@ abstract class IShoppingRepository {
   Future<ShoppingItem> updateItem(ShoppingItem item);
 
   Future<void> removeItem(int id);
+
+  /// Puts list [listId]'s items in the order of [itemIds].
+  Future<ShoppingList> reorderItems(int listId, List<int> itemIds);
+
+  /// Uploads [image] as a photo of item [itemId].
+  Future<ShoppingImage> addItemImage(int itemId, ImageUpload image);
+
+  /// Deletes the photo and its file.
+  Future<void> removeItemImage(int id);
 }
 
 class ShoppingRepository implements IShoppingRepository {
@@ -94,6 +103,65 @@ class ShoppingRepository implements IShoppingRepository {
   Future<void> removeItem(int id) async {
     final result = await client.delete('shopping-items/$id/');
     _check(result, 'delete');
+  }
+
+  @override
+  Future<ShoppingList> reorderItems(int listId, List<int> itemIds) async {
+    final result = await client.post(
+      'shopping-lists/$listId/reorder/',
+      data: {'items': itemIds},
+    );
+    _check(result, 'reorder');
+    return ShoppingList.from(result.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<ShoppingImage> addItemImage(int itemId, ImageUpload image) async {
+    final Response<dynamic> result;
+    try {
+      result = await client.post(
+        'shopping-item-images/',
+        data: FormData.fromMap({
+          'item': itemId,
+          'image': MultipartFile.fromBytes(
+            image.bytes,
+            filename: image.filename,
+          ),
+        }),
+      );
+    } on DioException catch (e) {
+      // say why the server refused it (not an image, too large...)
+      final message = _validationMessage(e.response?.data);
+      if (message != null) {
+        throw Exception(message);
+      }
+      rethrow;
+    }
+    _check(result, 'upload');
+    return ShoppingImage.from(result.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<void> removeItemImage(int id) async {
+    final result = await client.delete('shopping-item-images/$id/');
+    _check(result, 'delete');
+  }
+
+  /// First message of a DRF validation error, e.g.
+  /// `{"image": ["Upload a valid image..."]}`.
+  static String? _validationMessage(Object? data) {
+    if (data is! Map) {
+      return null;
+    }
+    for (final value in data.values) {
+      if (value is List && value.isNotEmpty) {
+        return value.first.toString();
+      }
+      if (value is String) {
+        return value;
+      }
+    }
+    return null;
   }
 }
 

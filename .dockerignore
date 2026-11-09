@@ -9,3 +9,4 @@ server/db.sqlite3
 server/staticfiles/
 .venv/
 venv/
+server/media/

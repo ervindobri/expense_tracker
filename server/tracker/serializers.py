@@ -1,7 +1,7 @@
-import datetime
-
 from rest_framework import serializers
-from .models import Category, Entry, ShoppingItem, ShoppingList, Subscription
+from .models import (
+    MAX_ITEM_IMAGES, Category, Entry, ShoppingItem, ShoppingItemImage, ShoppingList, Subscription,
+)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -56,13 +56,43 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return sum(e.amount for e in instance.entries.all())
 
 
+class ShoppingItemImageSerializer(serializers.ModelSerializer):
+    # absolute, so native clients can load it as a network image as-is
+    url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ShoppingItemImage
+        fields = ["id", "item", "image", "url", "created_date"]
+        extra_kwargs = {"image": {"write_only": True}}
+
+    def get_url(self, instance):
+        url = instance.image.url
+        request = self.context.get("request")
+        return request.build_absolute_uri(url) if request else url
+
+    def validate_item(self, item):
+        if self.instance is None and item.images.count() >= MAX_ITEM_IMAGES:
+            raise serializers.ValidationError(f"An item can have at most {MAX_ITEM_IMAGES} images.")
+        return item
+
+
 class ShoppingItemSerializer(serializers.ModelSerializer):
+    # Images are added and removed through their own endpoint.
+    images = serializers.SerializerMethodField()
+
     class Meta:
         model = ShoppingItem
         fields = [
             "id", "shopping_list", "name", "description", "expected_price", "currency", "buying_goal",
-            "is_bought", "created_date",
+            "is_bought", "position", "created_date", "images",
         ]
+        # changed through the list's reorder action, new items go last
+        read_only_fields = ["position"]
+
+    def get_images(self, instance):
+        # oldest first; sorted in Python so a prefetched list is reused
+        images = sorted(instance.images.all(), key=lambda i: (i.created_date, i.id))
+        return ShoppingItemImageSerializer(images, many=True, context=self.context).data
 
 
 class ShoppingListSerializer(serializers.ModelSerializer):
@@ -74,15 +104,6 @@ class ShoppingListSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "created_date", "items"]
 
     def get_items(self, instance):
-        # to buy first, soonest goal first (no goal last), then oldest first;
-        # sorted in Python so a prefetched list is reused
-        items = sorted(
-            instance.items.all(),
-            key=lambda i: (
-                i.is_bought,
-                i.buying_goal is None,
-                i.buying_goal or datetime.date.min,
-                i.created_date,
-            ),
-        )
-        return ShoppingItemSerializer(items, many=True).data
+        # in the user's order; sorted in Python so a prefetched list is reused
+        items = sorted(instance.items.all(), key=lambda i: (i.position, i.created_date))
+        return ShoppingItemSerializer(items, many=True, context=self.context).data

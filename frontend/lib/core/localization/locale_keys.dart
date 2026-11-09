@@ -84,6 +84,13 @@ class LocaleKeys {
   static const item_description_hint = 'item_description_hint';
   static const open_link = 'open_link';
   static const could_not_open_link = 'could_not_open_link';
+  static const add_photo = 'add_photo';
+  static const take_photo = 'take_photo';
+  static const choose_photos = 'choose_photos';
+  static const paste_image = 'paste_image';
+  static const no_clipboard_image = 'no_clipboard_image';
+  static const remove_photo = 'remove_photo';
+  static const photo_limit = 'photo_limit';
   static const expected_price = 'expected_price';
   static const buying_goal = 'buying_goal';
   static const no_goal = 'no_goal';

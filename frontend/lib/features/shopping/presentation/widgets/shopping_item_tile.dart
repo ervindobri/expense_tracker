@@ -11,6 +11,7 @@ import 'package:frontend/core/widgets/sheet_container.dart';
 import 'package:frontend/features/shopping/domain/models/shopping_list.dart';
 import 'package:frontend/features/shopping/presentation/state/shopping_provider.dart';
 import 'package:frontend/features/shopping/presentation/widgets/shopping_error.dart';
+import 'package:frontend/features/shopping/presentation/widgets/shopping_images.dart';
 import 'package:frontend/features/shopping/presentation/widgets/shopping_item_sheet.dart';
 import 'package:frontend/features/shopping/presentation/widgets/shopping_links.dart';
 import 'package:frontend/features/subscriptions/presentation/widgets/subscription_price.dart';
@@ -31,11 +32,12 @@ String goalLabel(ShoppingItem item, {DateTime? now}) {
 }
 
 /// Checklist row: tap the circle to tick it off, the row to edit, swipe to
-/// delete.
+/// delete. Inside a reorderable list, [dragIndex] adds a grip to drag it by.
 class ShoppingItemTile extends ConsumerWidget {
-  const ShoppingItemTile({super.key, required this.item});
+  const ShoppingItemTile({super.key, required this.item, this.dragIndex});
 
   final ShoppingItem item;
+  final int? dragIndex;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -158,6 +160,21 @@ class ShoppingItemTile extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  if (item.images.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Opacity(
+                        opacity: item.isBought ? 0.5 : 1,
+                        child: ShoppingImageThumb(
+                          image: shoppingImageProvider(item.images.first),
+                          size: 40,
+                          onTap: () => showShoppingImages(context, [
+                            for (final image in item.images)
+                              shoppingImageProvider(image),
+                          ]),
+                        ),
+                      ),
+                    ),
                   if (item.expectedPrice > 0)
                     Text(
                       formatInCurrency(item.expectedPrice, item.currency),
@@ -173,6 +190,24 @@ class ShoppingItemTile extends ConsumerWidget {
                       color: hint,
                       onPressed: () => openLink(context, links.first),
                       icon: const Icon(LucideIcons.externalLink, size: 18),
+                    ),
+                  if (dragIndex case final index?)
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.grab,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 8,
+                          ),
+                          child: Icon(
+                            LucideIcons.gripVertical,
+                            size: 18,
+                            color: hint,
+                          ),
+                        ),
+                      ),
                     ),
                 ],
               ),

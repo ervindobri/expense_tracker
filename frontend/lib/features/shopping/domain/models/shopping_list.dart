@@ -1,4 +1,60 @@
+import 'dart:typed_data';
+
 import 'package:frontend/features/settings/domain/currency.dart';
+
+/// Most photos a single item can hold; the server enforces the same.
+const maxItemImages = 10;
+
+/// Photo attached to an item's description, stored on the server.
+class ShoppingImage {
+  const ShoppingImage({required this.id, required this.url});
+
+  factory ShoppingImage.from(Map<String, dynamic> json) =>
+      ShoppingImage(id: json['id'] ?? 0, url: json['url'] ?? '');
+
+  final int id;
+
+  /// Absolute address to load it from as a network image.
+  final String url;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ShoppingImage && other.id == id && other.url == url;
+
+  @override
+  int get hashCode => Object.hash(id, url);
+}
+
+/// Photo picked on this device, not uploaded yet.
+class ImageUpload {
+  const ImageUpload({required this.bytes, required this.filename});
+
+  final Uint8List bytes;
+
+  /// Name to upload it as; always ends in an image extension the server
+  /// accepts.
+  final String filename;
+
+  static const _extensions = {'jpg', 'jpeg', 'png', 'gif', 'webp'};
+  static const _byMimeType = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+  };
+
+  /// Keeps [name] when it has a known image extension, otherwise names it
+  /// after [mimeType] (JPEG when unknown, which pickers re-encode to).
+  static String uploadName(String name, {String? mimeType}) {
+    final dot = name.lastIndexOf('.');
+    final extension = dot < 0 ? '' : name.substring(dot + 1).toLowerCase();
+    if (_extensions.contains(extension)) {
+      return name;
+    }
+    final base = (dot < 0 ? name : name.substring(0, dot)).trim();
+    return '${base.isEmpty ? 'photo' : base}.${_byMimeType[mimeType] ?? 'jpg'}';
+  }
+}
 
 /// Something to buy, checked off once bought.
 class ShoppingItem {
@@ -11,6 +67,8 @@ class ShoppingItem {
     this.currency = Currency.huf,
     this.buyingGoal,
     this.isBought = false,
+    this.position = 0,
+    this.images = const [],
   });
 
   factory ShoppingItem.from(Map<String, dynamic> json) {
@@ -25,6 +83,10 @@ class ShoppingItem {
       // a plain date, so no timezone conversion
       buyingGoal: goal == null ? null : DateTime.parse(goal),
       isBought: json['is_bought'] ?? false,
+      position: json['position'] ?? 0,
+      images: (json['images'] as List<dynamic>? ?? [])
+          .map((e) => ShoppingImage.from(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -45,6 +107,13 @@ class ShoppingItem {
   /// Day it should be bought by, if any.
   final DateTime? buyingGoal;
   final bool isBought;
+
+  /// Order within its list, set by dragging; lowest first.
+  final int position;
+
+  /// Photos shown with [description], oldest first. Changed through their
+  /// own endpoint, so not part of [toJson].
+  final List<ShoppingImage> images;
 
   /// Whole days until [buyingGoal]; negative once it has passed.
   int? daysUntilGoal({DateTime? now}) {
@@ -87,6 +156,8 @@ class ShoppingItem {
     Currency? currency,
     DateTime? Function()? buyingGoal,
     bool? isBought,
+    int? position,
+    List<ShoppingImage>? images,
   }) {
     return ShoppingItem(
       id: id,
@@ -97,6 +168,8 @@ class ShoppingItem {
       currency: currency ?? this.currency,
       buyingGoal: buyingGoal != null ? buyingGoal() : this.buyingGoal,
       isBought: isBought ?? this.isBought,
+      position: position ?? this.position,
+      images: images ?? this.images,
     );
   }
 }
@@ -116,6 +189,33 @@ class ShoppingList {
       items: (json['items'] as List<dynamic>? ?? [])
           .map((e) => ShoppingItem.from(e as Map<String, dynamic>))
           .toList(),
+    ).sortedByPosition();
+  }
+
+  /// Copy with [items] ordered by [ShoppingItem.position], ties keeping
+  /// their current order.
+  ShoppingList sortedByPosition() {
+    final indexed = items.indexed.toList()
+      ..sort((a, b) {
+        final byPosition = a.$2.position.compareTo(b.$2.position);
+        return byPosition != 0 ? byPosition : a.$1.compareTo(b.$1);
+      });
+    return copyWith(items: [for (final (_, item) in indexed) item]);
+  }
+
+  /// Copy with [itemIds] first, in that order, then the rest as they were;
+  /// positions are renumbered to match.
+  ShoppingList reordered(List<int> itemIds) {
+    final byId = {for (final i in items) i.id: i};
+    final ordered = [
+      for (final id in itemIds) ?byId[id],
+      ...items.where((i) => !itemIds.contains(i.id)),
+    ];
+    return copyWith(
+      items: [
+        for (final (position, item) in ordered.indexed)
+          item.copyWith(position: position),
+      ],
     );
   }
 
@@ -123,8 +223,8 @@ class ShoppingList {
   final String name;
   final List<ShoppingItem> items;
 
-  /// Still to buy, soonest goal first, items without a goal last.
-  List<ShoppingItem> get toBuy => sortItems(items.where((i) => !i.isBought));
+  /// Still to buy, in the list's order.
+  List<ShoppingItem> get toBuy => items.where((i) => !i.isBought).toList();
 
   List<ShoppingItem> get bought => items.where((i) => i.isBought).toList();
 
@@ -137,24 +237,6 @@ class ShoppingList {
       items: items ?? this.items,
     );
   }
-}
-
-/// Soonest [ShoppingItem.buyingGoal] first, items without one last; stable
-/// otherwise so the server's order (oldest first) is kept.
-List<ShoppingItem> sortItems(Iterable<ShoppingItem> items) {
-  final list = items.toList();
-  final indexed = {for (var i = 0; i < list.length; i++) list[i]: i};
-  return list..sort((a, b) {
-    final ga = a.buyingGoal;
-    final gb = b.buyingGoal;
-    if (ga != null && gb != null && ga != gb) {
-      return ga.compareTo(gb);
-    }
-    if ((ga == null) != (gb == null)) {
-      return ga == null ? 1 : -1;
-    }
-    return indexed[a]!.compareTo(indexed[b]!);
-  });
 }
 
 final _linkPattern = RegExp(

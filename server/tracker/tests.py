@@ -1,5 +1,9 @@
+import io
 import json
-from django.test import TestCase, RequestFactory
+import shutil
+import tempfile
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, RequestFactory, override_settings
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -7,8 +11,10 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from .models import (
-    Category, CategoryType, Entry, ShoppingItem, ShoppingList, Subscription, SubscriptionPeriod,
+    Category, CategoryType, Entry, ShoppingItem, ShoppingItemImage, ShoppingList, Subscription,
+    SubscriptionPeriod,
 )
+from PIL import Image
 from .serializers import CategorySerializer, EntrySerializer
 import datetime
 
@@ -536,20 +542,80 @@ class ExpenseTrackerAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertFalse(ShoppingItem.objects.exists())
 
-    def test_shopping_list_items_order(self):
-        """Test items come to-buy first, by soonest goal, goal-less last"""
+    def test_shopping_list_items_follow_position(self):
+        """Test items come in the user's order, ignoring goals and bought state"""
         shopping_list = self._shopping_list()
-        ShoppingItem.objects.create(shopping_list=shopping_list, name="Bought", is_bought=True)
-        ShoppingItem.objects.create(shopping_list=shopping_list, name="No goal")
+        ShoppingItem.objects.create(shopping_list=shopping_list, name="C", position=2)
         ShoppingItem.objects.create(
-            shopping_list=shopping_list, name="Later", buying_goal=datetime.date(2027, 3, 1)
+            shopping_list=shopping_list, name="A", position=0, is_bought=True
         )
         ShoppingItem.objects.create(
-            shopping_list=shopping_list, name="Soon", buying_goal=datetime.date(2026, 12, 1)
+            shopping_list=shopping_list, name="B", position=1,
+            buying_goal=datetime.date(2030, 1, 1),
         )
         response = self.client.get(f"/api/shopping-lists/{shopping_list.id}/")
-        names = [i["name"] for i in response.data["items"]]
-        self.assertEqual(names, ["Soon", "Later", "No goal", "Bought"])
+        self.assertEqual([i["name"] for i in response.data["items"]], ["A", "B", "C"])
+
+    def _add_item(self, shopping_list, name):
+        response = self.client.post(
+            "/api/shopping-items/",
+            {"shopping_list": shopping_list.id, "name": name, "position": 99},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        return response.data
+
+    def test_shopping_item_create_goes_last(self):
+        """Test new items get the next position in their own list"""
+        house = self._shopping_list("House")
+        groceries = self._shopping_list("Groceries")
+        self.assertEqual(self._add_item(house, "Sofa")["position"], 0)
+        self.assertEqual(self._add_item(house, "Lamp")["position"], 1)
+        # positions are per list, and can't be set on create
+        self.assertEqual(self._add_item(groceries, "Milk")["position"], 0)
+
+    def test_shopping_item_position_is_read_only(self):
+        """Test a PUT can't move an item; that's the reorder action's job"""
+        item = ShoppingItem.objects.create(shopping_list=self._shopping_list(), name="Lamp")
+        response = self.client.put(
+            f"/api/shopping-items/{item.id}/", {"position": 5}, format="json"
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["position"], 0)
+
+    def test_shopping_list_reorder(self):
+        """Test reordering sets positions in the given order"""
+        shopping_list = self._shopping_list()
+        a, b, c = (self._add_item(shopping_list, n)["id"] for n in "ABC")
+        response = self.client.post(
+            f"/api/shopping-lists/{shopping_list.id}/reorder/",
+            {"items": [c, a, b]},
+            format="json",
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual([i["name"] for i in response.data["items"]], ["C", "A", "B"])
+        self.assertEqual([i["position"] for i in response.data["items"]], [0, 1, 2])
+
+    def test_shopping_list_reorder_keeps_left_out_items_after(self):
+        """Test items missing from the request keep their order at the end"""
+        shopping_list = self._shopping_list()
+        a, b, c = (self._add_item(shopping_list, n)["id"] for n in "ABC")
+        response = self.client.post(
+            f"/api/shopping-lists/{shopping_list.id}/reorder/", {"items": [c]}, format="json"
+        )
+        self.assertEqual([i["name"] for i in response.data["items"]], ["C", "A", "B"])
+
+    def test_shopping_list_reorder_rejects_bad_ids(self):
+        """Test reordering refuses other lists' items, duplicates and junk"""
+        house = self._shopping_list("House")
+        groceries = self._shopping_list("Groceries")
+        sofa = self._add_item(house, "Sofa")["id"]
+        milk = self._add_item(groceries, "Milk")["id"]
+        url = f"/api/shopping-lists/{house.id}/reorder/"
+        for payload in ({"items": [sofa, milk]}, {"items": [sofa, sofa]}, {"items": "x"}, {}):
+            response = self.client.post(url, payload, format="json")
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST, payload)
+        self.assertEqual(ShoppingItem.objects.get(id=milk).position, 0)
 
     def test_shopping_items_filter_by_list(self):
         """Test filtering items by their list"""
@@ -586,3 +652,121 @@ class ExpenseTrackerAPITests(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["description"], description)
         self.assertEqual(response.data["name"], "Milk")
+
+
+def _png(name="photo.png", size=(4, 3)):
+    buffer = io.BytesIO()
+    Image.new("RGB", size, "red").save(buffer, format="PNG")
+    return SimpleUploadedFile(name, buffer.getvalue(), content_type="image/png")
+
+
+class ShoppingItemImageTests(TestCase):
+    """Photos attached to shopping items"""
+
+    def setUp(self):
+        self.media_root = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.media_root, ignore_errors=True)
+        settings_override = override_settings(MEDIA_ROOT=self.media_root)
+        settings_override.enable()
+        self.addCleanup(settings_override.disable)
+        self.client = APIClient()
+        self.list = ShoppingList.objects.create(name="House")
+        self.item = ShoppingItem.objects.create(shopping_list=self.list, name="Sofa")
+
+    def _upload(self, file=None, item=None):
+        return self.client.post(
+            "/api/shopping-item-images/",
+            {"item": (item or self.item).id, "image": file or _png()},
+            format="multipart",
+        )
+
+    def test_upload_returns_an_absolute_url(self):
+        response = self._upload()
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertTrue(response.data["url"].startswith("http://testserver/media/shopping/"))
+        self.assertNotIn("image", response.data)
+        image = ShoppingItemImage.objects.get()
+        self.assertEqual(image.item, self.item)
+        self.assertTrue(image.image.storage.exists(image.image.name))
+
+    def test_uploaded_image_is_served(self):
+        url = self._upload().data["url"]
+        response = self.client.get(url.removeprefix("http://testserver"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "image/png")
+        self.assertEqual(b"".join(response.streaming_content)[:8], b"\x89PNG\r\n\x1a\n")
+
+    def test_items_and_lists_include_their_images_in_order(self):
+        first = self._upload(_png("a.png")).data
+        second = self._upload(_png("b.png")).data
+        response = self.client.get(f"/api/shopping-items/{self.item.id}/")
+        self.assertEqual(
+            [i["id"] for i in response.data["images"]], [first["id"], second["id"]]
+        )
+        self.assertEqual(response.data["images"][0]["url"], first["url"])
+        response = self.client.get("/api/shopping-lists/")
+        self.assertEqual(len(response.data[0]["items"][0]["images"]), 2)
+        self.assertTrue(response.data[0]["items"][0]["images"][0]["url"].startswith("http://"))
+
+    def test_new_items_have_no_images(self):
+        response = self.client.post(
+            "/api/shopping-items/", {"shopping_list": self.list.id, "name": "Lamp"}, format="json"
+        )
+        self.assertEqual(response.data["images"], [])
+
+    def test_rejects_files_that_are_not_images(self):
+        fake = SimpleUploadedFile("photo.png", b"<script>alert(1)</script>", content_type="image/png")
+        response = self._upload(fake)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("image", response.data)
+        self.assertFalse(ShoppingItemImage.objects.exists())
+
+    def test_rejects_other_extensions(self):
+        response = self._upload(_png("photo.html"))
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("image", response.data)
+
+    def test_rejects_unknown_item(self):
+        response = self.client.post(
+            "/api/shopping-item-images/", {"item": 9999, "image": _png()}, format="multipart"
+        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("item", response.data)
+
+    def test_limits_images_per_item(self):
+        from . import serializers
+        self.addCleanup(setattr, serializers, "MAX_ITEM_IMAGES", serializers.MAX_ITEM_IMAGES)
+        serializers.MAX_ITEM_IMAGES = 2
+        self._upload()
+        self._upload()
+        response = self._upload()
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("item", response.data)
+
+    def test_delete_removes_the_file(self):
+        self._upload()
+        image = ShoppingItemImage.objects.get()
+        name = image.image.name
+        response = self.client.delete(f"/api/shopping-item-images/{image.id}/")
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(ShoppingItemImage.objects.exists())
+        self.assertFalse(image.image.storage.exists(name))
+
+    def test_deleting_the_item_or_list_removes_files(self):
+        self._upload()
+        other = ShoppingItem.objects.create(shopping_list=self.list, name="Lamp")
+        self._upload(item=other)
+        names = list(ShoppingItemImage.objects.values_list("image", flat=True))
+        storage = ShoppingItemImage.objects.first().image.storage
+        self.client.delete(f"/api/shopping-items/{self.item.id}/")
+        self.assertEqual(ShoppingItemImage.objects.count(), 1)
+        self.client.delete(f"/api/shopping-lists/{self.list.id}/")
+        self.assertFalse(ShoppingItemImage.objects.exists())
+        self.assertFalse(any(storage.exists(n) for n in names))
+
+    def test_filter_by_item(self):
+        self._upload()
+        other = ShoppingItem.objects.create(shopping_list=self.list, name="Lamp")
+        self._upload(item=other)
+        response = self.client.get(f"/api/shopping-item-images/?item={other.id}")
+        self.assertEqual([i["item"] for i in response.data], [other.id])

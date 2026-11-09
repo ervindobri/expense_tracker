@@ -6,6 +6,7 @@ import 'package:flutter/material.dart'
     hide Tooltip, IconButton, ElevatedButton, TextButton;
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:frontend/core/app/theme.dart';
+import 'package:frontend/core/extensions/build_context.dart';
 import 'package:frontend/core/helpers/tab_title_changer.dart';
 import 'package:frontend/core/helpers/toastification_service.dart';
 import 'package:frontend/core/localization/locale_keys.dart';
@@ -201,7 +202,20 @@ class HomeShell extends HookConsumerWidget {
           ? Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                navBar(axis: Axis.vertical),
+                Container(
+                  decoration: BoxDecoration(
+                    color: context.theme.scaffoldBackgroundColor,
+                    border: Border(
+                      right: BorderSide(
+                        color: context.theme.dividerColor.withValues(
+                          alpha: 0.2,
+                        ),
+                      ),
+                    ),
+                  ),
+                  height: context.height,
+                  child: navBar(axis: Axis.vertical),
+                ),
                 content,
               ],
             )

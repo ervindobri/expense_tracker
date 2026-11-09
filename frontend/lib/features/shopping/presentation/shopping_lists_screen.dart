@@ -161,7 +161,16 @@ class ShoppingListCard extends ConsumerWidget {
     final hint = Theme.of(context).hintColor;
     final toBuy = list.toBuy;
     final total = list.items.length;
-    final next = toBuy.where((i) => i.buyingGoal != null).firstOrNull;
+    // soonest goal, wherever it sits in the list's own order
+    final next = toBuy
+        .where((i) => i.buyingGoal != null)
+        .fold<ShoppingItem?>(
+          null,
+          (soonest, i) =>
+              soonest == null || i.buyingGoal!.isBefore(soonest.buyingGoal!)
+              ? i
+              : soonest,
+        );
     final overdue = next?.isOverdue() ?? false;
     final remaining = stillToSpend(ref, toBuy);
 

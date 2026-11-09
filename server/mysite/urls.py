@@ -14,12 +14,21 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.contrib import admin
-from django.urls import include, path
+from django.urls import include, path, re_path
+from django.views.static import serve
 
+
+def serve_media(request, path):
+    # MEDIA_ROOT read per request, so settings overrides (tests) apply
+    return serve(request, path, document_root=settings.MEDIA_ROOT)
 
 
 urlpatterns = [
     path('api/', include("tracker.urls")),
     path('admin/', admin.site.urls),
+    # Uploaded photos. Served by Django even with DEBUG off: the app is only
+    # reachable from the tailnet and there's no separate file server.
+    re_path(r'^media/(?P<path>.*)$', serve_media),
 ]

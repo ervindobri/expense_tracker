@@ -81,7 +81,50 @@ class ShoppingLists extends _$ShoppingLists {
     try {
       await _repository.removeItem(item.id);
     } catch (_) {
-      _replaceList(item.listId, (l) => l.copyWith(items: [...l.items, item]));
+      _replaceList(
+        item.listId,
+        (l) => l.copyWith(items: [...l.items, item]).sortedByPosition(),
+      );
+      rethrow;
+    }
+  }
+
+  /// Uploads [upload] as a photo of [item].
+  Future<ShoppingImage> addImage(ShoppingItem item, ImageUpload upload) async {
+    final image = await _repository.addItemImage(item.id, upload);
+    final latest = _latest(item);
+    _replaceItem(latest.copyWith(images: [...latest.images, image]));
+    return image;
+  }
+
+  /// Deletes [image] from [item].
+  Future<void> removeImage(ShoppingItem item, ShoppingImage image) async {
+    await _repository.removeItemImage(image.id);
+    final latest = _latest(item);
+    _replaceItem(
+      latest.copyWith(
+        images: latest.images.where((i) => i.id != image.id).toList(),
+      ),
+    );
+  }
+
+  /// [item] as it is in the state now, e.g. after it was ticked off.
+  ShoppingItem _latest(ShoppingItem item) =>
+      _lists.expand((l) => l.items).where((i) => i.id == item.id).firstOrNull ??
+      item;
+
+  /// Puts list [listId]'s items in the order of [itemIds] right away and
+  /// rolls back if saving fails.
+  Future<void> reorderItems(int listId, List<int> itemIds) async {
+    final before = _lists.where((l) => l.id == listId).firstOrNull;
+    if (before == null) {
+      return;
+    }
+    _replaceList(listId, (l) => l.reordered(itemIds));
+    try {
+      await _repository.reorderItems(listId, itemIds);
+    } catch (_) {
+      _replaceList(listId, (_) => before);
       rethrow;
     }
   }

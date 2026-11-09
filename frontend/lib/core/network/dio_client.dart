@@ -20,8 +20,10 @@ const _apiBaseUrl =
 
 @riverpod
 Dio dioClient(Ref ref) {
-  const url = kDebugMode || !kIsWeb
-      ? 'https://expense-tracker.tail0b146d.ts.net/api/'
-      : _apiBaseUrl;
+  // an explicit --dart-define=API_BASE_URL always wins, so debug builds can
+  // target a local backend (http://127.0.0.1:8000/api/) instead of the NAS
+  const url = bool.hasEnvironment('API_BASE_URL') || (kIsWeb && !kDebugMode)
+      ? _apiBaseUrl
+      : 'https://expense-tracker.tail0b146d.ts.net/api/';
   return Dio(BaseOptions(baseUrl: url));
 }

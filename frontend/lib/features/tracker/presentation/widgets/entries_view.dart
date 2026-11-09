@@ -288,7 +288,9 @@ class EntriesView extends HookConsumerWidget {
                               ),
                             ),
                             firstChild: SizedBox(
-                              width: context.width,
+                              width: kIsWeb
+                                  ? context.width * 0.3
+                                  : context.width,
                               child: ListView.separated(
                                 controller: scrollController,
                                 itemCount: 6,

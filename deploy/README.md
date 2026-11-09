@@ -72,14 +72,16 @@ Push to `main`, wait for the Actions build, then in the TrueNAS app UI
 sha (the workflow tags every build with it) — saving force-pulls the image.
 This is deterministic; relying on `:latest` + the **Upgrade** button only
 works when TrueNAS's periodic check has already noticed the new digest, and
-a plain restart never re-pulls at all. The SQLite DB and the Tailscale node
-identity live on the mounted datasets and survive upgrades.
+a plain restart never re-pulls at all. The SQLite DB, uploaded photos
+(`/data/media`) and the Tailscale node identity live on the mounted datasets
+and survive upgrades.
 
 ## Frontend (Flutter web)
 
 The `web` service serves the Flutter web build via nginx on :8080 in the same
 shared network namespace. The serve config path-routes: `/` goes to the
-frontend, `/api`, `/api-auth`, `/admin` and `/static` go to Django. Everything
+frontend, `/api`, `/api-auth`, `/admin`, `/static` and `/media` (uploaded
+shopping item photos) go to Django. Everything
 is one origin (`https://expense-tracker.<tailnet>.ts.net`), so no CORS.
 
 `.github/workflows/web-publish.yml` builds the bundle (Flutter 3.35.6) and

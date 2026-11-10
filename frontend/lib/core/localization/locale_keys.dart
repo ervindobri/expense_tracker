@@ -105,6 +105,11 @@ class LocaleKeys {
   static const item_deleted = 'item_deleted';
   static const list_deleted = 'list_deleted';
   static const error_saving_shopping = 'error_saving_shopping';
+  static const export_action = 'export_action';
+  static const export_data = 'export_data';
+  static const export_data_description = 'export_data_description';
+  static const export_started = 'export_started';
+  static const export_failed = 'export_failed';
   static const last_payment = 'last_payment';
   static const related_transactions = 'related_transactions';
   static const no_related_transactions = 'no_related_transactions';

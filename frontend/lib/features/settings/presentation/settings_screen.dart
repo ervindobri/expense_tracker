@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
 import 'package:fluent_ui/fluent_ui.dart' hide ListTile;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -7,8 +10,12 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:frontend/core/app/theme.dart';
 import 'package:frontend/core/extensions/build_context.dart';
 import 'package:frontend/core/helpers/tab_title_changer.dart';
+import 'package:frontend/core/helpers/toastification_service.dart';
+import 'package:frontend/core/localization/locale_keys.dart';
+import 'package:frontend/core/network/dio_client.dart';
 import 'package:frontend/core/state/currency_provider.dart';
 import 'package:frontend/core/widgets/context_menu_overlay.dart';
+import 'package:frontend/features/export/export_service.dart';
 import 'package:frontend/features/settings/domain/currency.dart';
 import 'package:frontend/features/settings/domain/reminder_frequency.dart';
 import 'package:frontend/features/settings/presentation/logging_reminder_provider.dart';
@@ -17,6 +24,34 @@ import 'package:timezone/timezone.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  Future<void> _export(
+    BuildContext context,
+    WidgetRef ref,
+    ExportFormat format,
+  ) async {
+    final started = await downloadExport(
+      apiBaseUrl: ref.read(dioClientProvider).options.baseUrl,
+      format: format,
+    );
+    if (!context.mounted) {
+      return;
+    }
+    if (started) {
+      unawaited(
+        ToastificationService.showSuccess(
+          context: context,
+          title: LocaleKeys.export_started.tr(),
+        ),
+      );
+    } else {
+      ToastificationService.showError(
+        context: context,
+        title: LocaleKeys.export_failed.tr(),
+        description: format.display,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -117,6 +152,40 @@ class SettingsScreen extends ConsumerWidget {
                           children: [
                             Text(ref.watch(currencyProvider).display),
                             const Icon(LucideIcons.chevronDown),
+                          ],
+                        ),
+                      ),
+                    ),
+                    ListTile(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(99.0),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12.0,
+                      ),
+                      title: Text(
+                        LocaleKeys.export_data.tr(),
+                        style: context.bodyMedium,
+                      ),
+                      subtitle: Text(
+                        LocaleKeys.export_data_description.tr(),
+                        style: context.bodySmall,
+                      ),
+                      // picking a format starts the download
+                      trailing: ContextMenuOverlay<ExportFormat>(
+                        width: 160,
+                        items: ExportFormat.values,
+                        itemBuilder: (_, f) => Text(f.display),
+                        onSelected: (format) =>
+                            _export(context, ref, format),
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          spacing: 4,
+                          children: [
+                            Text(LocaleKeys.export_action.tr()),
+                            const Icon(LucideIcons.download),
                           ],
                         ),
                       ),

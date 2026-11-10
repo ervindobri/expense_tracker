@@ -3,7 +3,7 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.routers import DefaultRouter
 from .views import (
     CategoryViewSet, EntryViewSet, ShoppingItemImageViewSet, ShoppingItemViewSet, ShoppingListViewSet,
-    SubscriptionViewSet,
+    SubscriptionViewSet, export_data,
 )
 
 router = DefaultRouter()
@@ -16,4 +16,5 @@ router.register(r"shopping-item-images", ShoppingItemImageViewSet)
 
 urlpatterns = [
     path("auth/login/", ObtainAuthToken.as_view(), name="api-login"),
+    path("export/", export_data, name="export"),
 ] + router.urls

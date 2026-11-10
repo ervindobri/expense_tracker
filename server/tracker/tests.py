@@ -770,3 +770,163 @@ class ShoppingItemImageTests(TestCase):
         self._upload(item=other)
         response = self.client.get(f"/api/shopping-item-images/?item={other.id}")
         self.assertEqual([i["item"] for i in response.data], [other.id])
+
+
+class ExportTests(TestCase):
+    """GET /api/export/: categories, entries, subscriptions and statistics as
+    an xlsx workbook or a zip of CSVs."""
+
+    def setUp(self):
+        self.client = APIClient()
+        now = datetime.datetime(2026, 3, 15, 12, tzinfo=datetime.timezone.utc)
+        self.groceries = Category.objects.create(name="Groceries", pub_date=now, category_type=CategoryType.EXPENSE)
+        self.rent = Category.objects.create(name="Rent & bills", pub_date=now, category_type=CategoryType.EXPENSE)
+        self.salary = Category.objects.create(name="Salary", pub_date=now, category_type=CategoryType.INCOME)
+        self.unused = Category.objects.create(name="Fashion", pub_date=now, category_type=CategoryType.EXPENSE)
+        self.netflix = Subscription.objects.create(name="Netflix", amount=4.99, currency="EUR", created_date=now)
+
+        def entry(amount, category, month, day=10, **kwargs):
+            return Entry.objects.create(
+                amount=amount, category=category,
+                added_date=datetime.datetime(2026, month, day, 12, tzinfo=datetime.timezone.utc), **kwargs
+            )
+
+        entry(500000, self.salary, 1)
+        entry(150000, self.rent, 1)
+        entry(20000, self.groceries, 1, notes="Árvíztűrő tükörfúrógép")
+        # nothing in February: still a row in the monthly summary
+        entry(500000, self.salary, 3)
+        entry(30000, self.groceries, 3)
+        entry(2000, self.groceries, 3, subscription=self.netflix, currency="EUR", original_amount=4.99)
+        # 23:30 UTC on Mar 31 is already April in Budapest
+        entry(1000, self.groceries, 3, day=31, notes="late")
+        Entry.objects.filter(notes="late").update(
+            added_date=datetime.datetime(2026, 3, 31, 23, 30, tzinfo=datetime.timezone.utc)
+        )
+
+    def _workbook(self, **params):
+        from openpyxl import load_workbook
+
+        response = self.client.get("/api/export/", params)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        return response, load_workbook(io.BytesIO(response.content))
+
+    @staticmethod
+    def _rows(ws, min_row=2, min_col=1, max_col=None):
+        return [
+            list(r) for r in ws.iter_rows(min_row=min_row, min_col=min_col, max_col=max_col, values_only=True)
+            if any(v is not None for v in r)
+        ]
+
+    def test_xlsx_is_default_and_downloads(self):
+        response, wb = self._workbook()
+        self.assertEqual(
+            response["Content-Type"], "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        self.assertRegex(response["Content-Disposition"], r'attachment; filename="expense-tracker-.+\.xlsx"')
+        self.assertEqual(
+            wb.sheetnames, ["Summary", "Monthly", "By category", "Entries", "Categories", "Subscriptions"]
+        )
+
+    def test_xlsx_data_sheets(self):
+        _, wb = self._workbook()
+        entries = self._rows(wb["Entries"])
+        self.assertEqual(len(entries), 7)
+        self.assertEqual(wb["Entries"]["A1"].value, "ID")
+        netflix = next(r for r in entries if r[8] == "Netflix")
+        self.assertEqual(netflix[2:8], ["Expense", "Groceries", 2000, 4.99, "EUR", None])  # blank notes cell
+        self.assertIn("Árvíztűrő tükörfúrógép", [r[7] for r in entries])
+        self.assertIsInstance(entries[0][1], datetime.datetime)
+
+        categories = {r[1]: r for r in self._rows(wb["Categories"])}
+        # seeded defaults are exported too
+        self.assertLessEqual({"Groceries", "Rent & bills", "Salary", "Fashion"}, set(categories))
+        self.assertEqual(len(categories), Category.objects.values("name").distinct().count())
+        self.assertEqual(categories["Groceries"][4:], [4, 53000])
+        self.assertEqual(categories["Fashion"][4:], [0, 0])
+
+        subs = self._rows(wb["Subscriptions"])
+        self.assertEqual(subs[0][1:6], ["Netflix", 4.99, "EUR", "Monthly", "Yes"])
+        self.assertEqual(subs[0][7:], [1, 2000])
+
+    def test_xlsx_statistics(self):
+        _, wb = self._workbook()
+        monthly = self._rows(wb["Monthly"], max_col=4)
+        self.assertEqual(
+            monthly,
+            [
+                ["2026-01", 500000, 170000, 330000],
+                ["2026-02", 0, 0, 0],
+                ["2026-03", 500000, 33000, 467000],
+            ],
+        )
+        yearly = self._rows(wb["Summary"], min_row=5, max_col=6)
+        self.assertEqual(yearly[0][:4], [2026, 1000000, 203000, 797000])
+        self.assertAlmostEqual(yearly[0][4], 0.797)
+        self.assertEqual(yearly[0][5], 7)
+
+        by_category = wb["By category"]
+        expenses = self._rows(by_category, min_row=3, max_col=4)
+        self.assertEqual([r[0] for r in expenses], ["Rent & bills", "Groceries"])  # largest first, unused left out
+        self.assertAlmostEqual(expenses[0][2], 150000 / 203000)
+        self.assertEqual(self._rows(by_category, min_row=3, min_col=7, max_col=10), [["Salary", 1000000, 1, 2]])
+
+    def test_xlsx_has_charts_and_tables(self):
+        _, wb = self._workbook()
+        self.assertEqual(len(wb["Summary"]._charts), 1)
+        self.assertEqual(len(wb["Monthly"]._charts), 2)
+        self.assertEqual(len(wb["By category"]._charts), 2)
+        self.assertIn("Entries", wb["Entries"].tables)
+
+    def test_timezone_moves_entries_to_local_day(self):
+        _, wb = self._workbook(tz="Europe/Budapest")
+        months = [r[0] for r in self._rows(wb["Monthly"], max_col=1)]
+        self.assertEqual(months[-1], "2026-04")
+        late = next(r for r in self._rows(wb["Entries"]) if r[7] == "late")
+        self.assertEqual(late[1], datetime.datetime(2026, 4, 1, 1, 30))
+
+    def test_unknown_timezone_falls_back(self):
+        _, wb = self._workbook(tz="Not/AZone")
+        self.assertEqual(self._rows(wb["Monthly"], max_col=1)[-1][0], "2026-03")
+
+    def test_empty_database_exports(self):
+        Entry.objects.all().delete()
+        Subscription.objects.all().delete()
+        Category.objects.all().delete()
+        _, wb = self._workbook()
+        self.assertEqual(self._rows(wb["Entries"]), [])
+        self.assertEqual(wb["Monthly"]._charts, [])
+
+    def test_csv_zip(self):
+        import csv
+        import zipfile
+
+        response = self.client.get("/api/export/", {"file_format": "csv"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/zip")
+        self.assertRegex(response["Content-Disposition"], r'filename="expense-tracker-.+\.zip"')
+        zf = zipfile.ZipFile(io.BytesIO(response.content))
+        self.assertEqual(
+            sorted(zf.namelist()),
+            sorted([
+                "entries.csv", "categories.csv", "subscriptions.csv", "monthly_summary.csv",
+                "yearly_summary.csv", "expenses_by_category.csv", "income_by_category.csv",
+            ]),
+        )
+        raw = zf.read("entries.csv")
+        self.assertTrue(raw.startswith(b"\xef\xbb\xbf"))  # BOM: Excel reads it as UTF-8
+        rows = list(csv.reader(io.StringIO(raw.decode("utf-8-sig"))))
+        self.assertEqual(rows[0][:5], ["ID", "Date", "Type", "Category", "Amount (HUF)"])
+        self.assertEqual(len(rows), 8)
+        netflix = next(r for r in rows if r[8] == "Netflix")
+        self.assertEqual(netflix[4:7], ["2000", "4.99", "EUR"])
+        monthly = list(csv.reader(io.StringIO(zf.read("monthly_summary.csv").decode("utf-8-sig"))))
+        self.assertEqual(monthly[1], ["2026-01", "500000", "170000", "330000"])
+
+    def test_invalid_format(self):
+        response = self.client.get("/api/export/", {"file_format": "pdf"})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_only_get(self):
+        response = self.client.post("/api/export/")
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)

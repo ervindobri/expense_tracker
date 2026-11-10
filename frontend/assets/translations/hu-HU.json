@@ -114,5 +114,10 @@
   "item_saved": "Tétel mentve",
   "item_deleted": "Tétel törölve",
   "list_deleted": "Lista törölve",
-  "error_saving_shopping": "Nem sikerült menteni: {error}"
+  "error_saving_shopping": "Nem sikerült menteni: {error}",
+  "export_action": "Exportálás",
+  "export_data": "Adatok exportálása",
+  "export_data_description": "Kategóriák, tételek, előfizetések és statisztikák",
+  "export_started": "Az export letöltése elindult",
+  "export_failed": "Nem sikerült elindítani az exportot"
 }

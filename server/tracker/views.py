@@ -1,10 +1,13 @@
 # Create your views here.
 from django.db.models import Max
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
+from django.views.decorators.http import require_GET
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.response import Response
+from . import export
 from .models import Category, Entry, ShoppingItem, ShoppingItemImage, ShoppingList, Subscription
 from .serializers import (
     CategorySerializer, EntrySerializer, ShoppingItemImageSerializer, ShoppingItemSerializer,
@@ -13,6 +16,32 @@ from .serializers import (
 
 def index(request):
     return HttpResponse("Hello, world. You're at the tracker index.")
+
+
+# A plain Django view rather than DRF: DRF claims the `format` query param,
+# and a browser opening this URL should get the file, not a browsable page.
+@require_GET
+def export_data(request):
+    """Every category, entry and subscription plus statistics, as a download.
+
+    `?file_format=xlsx` (default): one workbook with charts.
+    `?file_format=csv`: a zip of CSV files.
+    `?tz=Europe/Budapest`: zone dates are written in (default: the server's).
+    """
+    file_format = request.GET.get("file_format", "xlsx").lower()
+    if file_format not in ("xlsx", "csv"):
+        return JsonResponse({"file_format": ["Expected 'xlsx' or 'csv'."]}, status=400)
+    tables = export.collect(export.resolve_timezone(request.GET.get("tz")))
+    stamp = timezone.now().strftime("%Y-%m-%d")
+    if file_format == "xlsx":
+        body, content_type, ext = export.build_workbook(tables), export.XLSX_CONTENT_TYPE, "xlsx"
+    else:
+        body, content_type, ext = export.build_csv_zip(tables), "application/zip", "zip"
+    response = HttpResponse(body, content_type=content_type)
+    response["Content-Disposition"] = f'attachment; filename="expense-tracker-{stamp}.{ext}"'
+    # lets a web client read the file name on a cross-origin fetch
+    response["Access-Control-Expose-Headers"] = "Content-Disposition"
+    return response
 
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()

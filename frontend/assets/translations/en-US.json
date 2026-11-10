@@ -114,5 +114,10 @@
   "item_saved": "Item saved",
   "item_deleted": "Item deleted",
   "list_deleted": "List deleted",
-  "error_saving_shopping": "Couldn't save: {error}"
+  "error_saving_shopping": "Couldn't save: {error}",
+  "export_action": "Export",
+  "export_data": "Export data",
+  "export_data_description": "Categories, entries, subscriptions and statistics",
+  "export_started": "Export downloading",
+  "export_failed": "Couldn't start the export"
 }
